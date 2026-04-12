@@ -497,7 +497,7 @@ export function DashboardPage() {
                     <button key={option.key} type="button" onClick={() => setFiltro(option.key as FiltroStatus)} className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-medium ${filtro === option.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>
                       {option.label}
                     </button>
-                  )          )}
+                  ))}
                 </div>
                 <button type="button" onClick={() => navigate(`/relatorio?month=${referenceDate.getMonth() + 1}&year=${referenceDate.getFullYear()}&period=${period}`)} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
                   Ver Relatrio Mensal
@@ -549,8 +549,7 @@ export function DashboardPage() {
                 {!loading && filtradas.length === 0 ? <p className="text-sm text-slate-600">Nenhuma estagiria neste filtro.</p> : null}
               </div>
             </section>
-          ) : (
-            <>
+
               <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -594,8 +593,6 @@ export function DashboardPage() {
                   </label>
                 </div>
               </section>
-            </>
-          )}
         </div>
 
         <SummaryPanel items={items} selectedIds={selectedIds} referenceDate={referenceDate} period={period} savedReports={savedReports} onPeriodChange={setPeriod} onExport={handleExport} onShare={handleShare} />

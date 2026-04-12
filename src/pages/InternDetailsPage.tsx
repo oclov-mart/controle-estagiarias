@@ -291,13 +291,13 @@ export function InternDetailsPage() {
     await patch({ registros: sortRegistros(next) })
   }
 
-  async function saveManyRegistros(days: string[], draft: Omit<Registro, 'day'>) {
+  async function saveManyRegistros(days: string[], draft: Partial<Registro>) {
     if (!item || days.length === 0) return
     const registrosMap = new Map((item.registros ?? []).map((registro) => [registro.day, registro]))
 
     days.forEach((day) => {
       if (!formacaoDays.includes(day)) {
-        registrosMap.set(day, { day, ...draft })
+        registrosMap.set(day, { day, tipo: draft.tipo ?? 'presenca', motivo: draft.motivo ?? null, atestado_medico: draft.atestado_medico ?? false, hora_entrada: draft.hora_entrada ?? null, hora_saida: draft.hora_saida ?? null, hora_extra: draft.hora_extra ?? null, anexo_atestado: draft.anexo_atestado ?? null })
       }
     })
 
@@ -407,7 +407,7 @@ export function InternDetailsPage() {
       <AccordionSection title="Assiduidade" subtitle="Calendário visual, seleção múltipla, formações automáticas e anexo de atestado por dia." isOpen={openSections.assiduidade} onToggle={() => toggleSection('assiduidade')}>
         <div className="space-y-6">
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-            <MonthlyCalendar registros={item.registros ?? []} formacaoDays={formacaoDays} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
+            <MonthlyCalendar month={new Date()} registros={Object.fromEntries((item.registros ?? []).map(r => [r.day, r]))} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
             <HoursExtraCard registros={item.registros ?? []} />
           </div>
 
