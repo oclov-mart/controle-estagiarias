@@ -47,7 +47,7 @@ export function InternDetailsPage() {
       .single()
 
     if (dbError) {
-      setError('Nao foi possivel carregar os detalhes.')
+      setError('Não foi possível carregar os detalhes.')
       setLoading(false)
       return
     }
@@ -104,10 +104,10 @@ export function InternDetailsPage() {
     const { error: updateError } = await supabase.from('estagiarias').update(updates).eq('id', item.id)
     setSaving(false)
     if (updateError) {
-      setError('Falha ao salvar alteracao.')
+      setError('Falha ao salvar alteração.')
       return
     }
-    setFeedback('Alteracao salva.')
+    setFeedback('Alteração salva.')
     await fetchOne()
   }
 
@@ -117,7 +117,7 @@ export function InternDetailsPage() {
     if (!ok) return
     const { error: deleteError } = await supabase.from('estagiarias').delete().eq('id', item.id)
     if (deleteError) {
-      setError('Nao foi possivel excluir.')
+      setError('Não foi possível excluir.')
       return
     }
     navigate('/')
@@ -176,7 +176,7 @@ export function InternDetailsPage() {
   if (!item) {
     return (
       <main className="mx-auto w-full max-w-5xl p-4">
-        <p className="text-red-600">{error || 'Registro nao encontrado.'}</p>
+        <p className="text-red-600">{error || 'Registro não encontrado.'}</p>
         <Link to="/" className="mt-2 inline-block text-sm underline">
           Voltar
         </Link>
@@ -234,7 +234,7 @@ export function InternDetailsPage() {
             />
           </label>
           <label className="text-sm">
-            Dias de estagio
+            Dias de estágio
             <input
               value={item.dias_estagio}
               onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))}
@@ -267,7 +267,7 @@ export function InternDetailsPage() {
             />
           </label>
           <label className="text-sm">
-            Devolucao
+            Devolução
             <input
               type="date"
               value={item.data_devolucao ?? ''}
@@ -277,7 +277,7 @@ export function InternDetailsPage() {
           </label>
         </div>
         <p className="mt-3 text-sm text-slate-600">
-          Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} | Devolucao:{' '}
+          Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} | Devolução:{' '}
           {formatDate(item.data_devolucao)}
         </p>
       </section>
@@ -290,13 +290,13 @@ export function InternDetailsPage() {
       />
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Formacoes</h2>
+        <h2 className="mb-3 text-lg font-semibold">Formações</h2>
         <form onSubmit={addFormacao} className="grid gap-2 md:grid-cols-5">
           <input
             required
             value={newFormacao.nome}
             onChange={(event) => setNewFormacao((prev) => ({ ...prev, nome: event.target.value }))}
-            placeholder="Nome da formacao"
+            placeholder="Nome da formação"
             className="rounded-xl border border-slate-200 px-3 py-2 md:col-span-2"
           />
           <input
@@ -323,7 +323,7 @@ export function InternDetailsPage() {
             Ausente
           </label>
           <button className="rounded-xl bg-slate-900 px-4 py-2 font-medium text-white md:col-span-5" type="submit">
-            Adicionar formacao
+            Adicionar formação
           </button>
         </form>
 
@@ -356,7 +356,7 @@ export function InternDetailsPage() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-lg font-semibold">Observacoes</h2>
+        <h2 className="mb-2 text-lg font-semibold">Observações</h2>
         <textarea
           value={item.observacoes ?? ''}
           onChange={(event) => setItem((prev) => (prev ? { ...prev, observacoes: event.target.value } : prev))}

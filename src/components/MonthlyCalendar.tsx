@@ -12,7 +12,7 @@ type MonthlyCalendarProps = {
 }
 
 const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom']
-const monthNames = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
 function toDraft(registro: Registro | null, day: string, tipo?: RegistroTipo): RegistroDraft {
   const base = registro ?? createEmptyRegistro(day, tipo ?? 'presenca')
@@ -46,7 +46,7 @@ function registroSummary(registro: Registro | null): string {
 
   if (registro.hora_extra) return `Extra: ${registro.hora_extra}`
   if (registro.hora_entrada && registro.hora_saida) return `${registro.hora_entrada} - ${registro.hora_saida}`
-  return 'Presenca'
+  return 'Presença'
 }
 
 function RegistroFields({
@@ -79,7 +79,7 @@ function RegistroFields({
               : 'border-slate-200 bg-white text-slate-600'
           }`}
         >
-          Presenca
+          Presença
         </button>
         <button
           type="button"
@@ -99,7 +99,7 @@ function RegistroFields({
             <input
               value={draft.motivo ?? ''}
               onChange={(event) => onChange({ ...draft, motivo: event.target.value || null })}
-              placeholder="Ex: consulta, faculdade, indisposicao"
+              placeholder="Ex: consulta, faculdade, indisposição"
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
             />
           </label>
@@ -109,7 +109,7 @@ function RegistroFields({
               checked={draft.atestado_medico}
               onChange={(event) => onChange({ ...draft, atestado_medico: event.target.checked })}
             />
-            Tem atestado medico
+            Tem atestado médico
           </label>
         </>
       ) : (
@@ -124,7 +124,7 @@ function RegistroFields({
             />
           </label>
           <label className="text-sm">
-            Hora de saida
+            Hora de saída
             <input
               type="time"
               value={draft.hora_saida ?? ''}
@@ -210,12 +210,12 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
     <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Calendario</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Calendário</p>
           <h3 className="text-xl font-semibold text-slate-900">{monthLabel}</h3>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => changeMonth(-1)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-            Mes anterior
+            Mês anterior
           </button>
           <select
             value={referenceDate.getMonth()}
@@ -240,7 +240,7 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
             ))}
           </select>
           <button type="button" onClick={() => changeMonth(1)} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-            Proximo mes
+            Próximo mês
           </button>
         </div>
       </div>
@@ -248,9 +248,9 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h4 className="font-semibold text-slate-900">Marcacao em lote</h4>
+            <h4 className="font-semibold text-slate-900">Marcação em lote</h4>
             <p className="text-sm text-slate-600">
-              Selecione varios dias no calendario e aplique falta ou presenca de uma vez.
+              Selecione vários dias no calendário e aplique falta ou presença de uma vez.
             </p>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-slate-700">
@@ -274,7 +274,7 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
             onClick={() => setSelectedDays([])}
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm"
           >
-            Limpar selecao
+            Limpar seleção
           </button>
         </div>
       </div>
@@ -324,7 +324,7 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
 
               <button type="button" onClick={() => openDayEditor(dateKey)} className="mt-2 block w-full text-left">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  {registro?.tipo === 'falta' ? 'Falta' : registro?.tipo === 'presenca' ? 'Presenca' : 'Sem registro'}
+                  {registro?.tipo === 'falta' ? 'Falta' : registro?.tipo === 'presenca' ? 'Presença' : 'Sem registro'}
                 </p>
                 <p className="mt-1 line-clamp-2 text-xs text-slate-700">{registroSummary(registro)}</p>
               </button>
@@ -342,7 +342,7 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
                   onClick={() => quickSave(dateKey, 'presenca')}
                   type="button"
                 >
-                  Presenca
+                  Presença
                 </button>
                 <button
                   className="rounded-xl border border-slate-200 bg-white px-1 py-2 text-slate-600 transition hover:bg-slate-100"
@@ -362,7 +362,7 @@ export function MonthlyCalendar({ registros, onSaveRegistro, onRemoveRegistro, o
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 className="font-semibold text-slate-900">Detalhes do dia {new Date(`${editorDay}T00:00:00`).toLocaleDateString('pt-BR')}</h4>
-              <p className="text-sm text-slate-600">Registre motivo da falta ou horario da presenca.</p>
+              <p className="text-sm text-slate-600">Registre motivo da falta ou horário da presença.</p>
             </div>
             <button type="button" onClick={() => setEditorDay(null)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
               Fechar
