@@ -1,4 +1,10 @@
-export type RegistroTipo = 'presenca' | 'falta' | 'abono' | 'formacao'
+﻿export type RegistroTipo = 'presenca' | 'falta' | 'abono' | 'formacao'
+
+export type RegistroAnexo = {
+  file_name: string
+  mime_type: string
+  data_url: string
+}
 
 export type Registro = {
   day: string
@@ -8,6 +14,7 @@ export type Registro = {
   hora_entrada: string | null
   hora_saida: string | null
   hora_extra: string | null
+  anexo_atestado: RegistroAnexo | null
 }
 
 export type Formacao = {
@@ -33,3 +40,15 @@ export type Estagiaria = {
 }
 
 export type StatusPrazo = 'atrasado' | 'em_risco' | 'ok' | 'sem_prazo'
+
+export type ReportRow = {
+  id: string
+  nome: string
+  faculdade: string
+  dias_estagio: string
+  presencas: number
+  faltas: number
+  horas_extras: string
+  ultimo_prazo: string
+  status: string
+}

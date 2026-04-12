@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { capitalizeWords } from '../utils'
 
@@ -22,7 +22,6 @@ export function InternForm({ onSave }: InternFormProps) {
     event.preventDefault()
     setLoading(true)
     try {
-      // Capitaliza automaticamente campos de texto obrigatórios.
       await onSave({
         nome: capitalizeWords(nome),
         faculdade: capitalizeWords(faculdade),
@@ -39,40 +38,13 @@ export function InternForm({ onSave }: InternFormProps) {
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-2">
-      <input
-        required
-        placeholder="Nome"
-        value={nome}
-        onChange={(event) => setNome(event.target.value)}
-        className="rounded-xl border border-slate-200 px-3 py-2"
-      />
-      <input
-        required
-        placeholder="Faculdade"
-        value={faculdade}
-        onChange={(event) => setFaculdade(event.target.value)}
-        className="rounded-xl border border-slate-200 px-3 py-2"
-      />
-      <input
-        required
-        placeholder="Dias de estágio (ex: seg, qua, sex)"
-        value={diasEstagio}
-        onChange={(event) => setDiasEstagio(event.target.value)}
-        className="rounded-xl border border-slate-200 px-3 py-2 md:col-span-2"
-      />
-      <textarea
-        placeholder="Observações (opcional)"
-        value={observacoes}
-        onChange={(event) => setObservacoes(event.target.value)}
-        className="min-h-20 rounded-xl border border-slate-200 px-3 py-2 md:col-span-2"
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-xl bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-60 md:col-span-2"
-      >
-        {loading ? 'Salvando...' : 'Adicionar estagiária'}
+    <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+      <input required placeholder="Nome" value={nome} onChange={(event) => setNome(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+      <input required placeholder="Faculdade" value={faculdade} onChange={(event) => setFaculdade(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+      <input required placeholder="Dias de estágio (ex: seg, qua, sex)" value={diasEstagio} onChange={(event) => setDiasEstagio(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
+      <textarea placeholder="Observações (opcional)" value={observacoes} onChange={(event) => setObservacoes(event.target.value)} className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
+      <button type="submit" disabled={loading} className="min-h-12 rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white shadow-sm disabled:opacity-60 md:col-span-2">
+        {loading ? 'Salvando...' : '+ Adicionar estagiária'}
       </button>
     </form>
   )

@@ -18,6 +18,16 @@ create table if not exists public.estagiarias (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.export_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  action text not null,
+  scope text not null,
+  report_title text not null,
+  rows_count integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -34,6 +44,7 @@ before update on public.estagiarias
 for each row execute function public.set_updated_at();
 
 alter table public.estagiarias enable row level security;
+alter table public.export_logs enable row level security;
 
 drop policy if exists "estagiarias_select_own" on public.estagiarias;
 create policy "estagiarias_select_own"
@@ -59,6 +70,18 @@ create policy "estagiarias_delete_own"
 on public.estagiarias
 for delete
 using (user_id = auth.uid());
+
+drop policy if exists "export_logs_select_own" on public.export_logs;
+create policy "export_logs_select_own"
+on public.export_logs
+for select
+using (user_id = auth.uid());
+
+drop policy if exists "export_logs_insert_own" on public.export_logs;
+create policy "export_logs_insert_own"
+on public.export_logs
+for insert
+with check (user_id = auth.uid());
 
 -- Habilita eventos Realtime da tabela no canal postgres_changes.
 do $$

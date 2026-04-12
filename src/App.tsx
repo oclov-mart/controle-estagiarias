@@ -1,8 +1,9 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+﻿import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LoginForm } from './components/LoginForm'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { DashboardPage } from './pages/DashboardPage'
 import { InternDetailsPage } from './pages/InternDetailsPage'
+import { MonthlyReportPage } from './pages/MonthlyReportPage'
 
 function AuthenticatedApp() {
   const { session, loading } = useAuth()
@@ -12,15 +13,14 @@ function AuthenticatedApp() {
   }
 
   if (!session) {
-    // Sem sessão: usuário precisa autenticar.
     return <LoginForm />
   }
 
-  // Com sessão: libera as rotas internas.
   return (
     <Routes>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/estagiaria/:id" element={<InternDetailsPage />} />
+      <Route path="/relatorio" element={<MonthlyReportPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -28,7 +28,6 @@ function AuthenticatedApp() {
 
 function App() {
   return (
-    // Contexto de autenticação disponível para todo o app.
     <BrowserRouter>
       <AuthProvider>
         <AuthenticatedApp />

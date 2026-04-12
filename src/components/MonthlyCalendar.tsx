@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
-import type { Registro, RegistroTipo } from '../types'
+import type { ChangeEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { Registro, RegistroAnexo, RegistroTipo } from '../types'
 import { createEmptyRegistro, monthDays, toDateValue } from '../utils'
 
 type RegistroDraft = Omit<Registro, 'day'>
@@ -20,11 +20,11 @@ type MonthlyCalendarProps = {
 const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom']
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
-const statusStyles: Record<RegistroTipo, string> = {
-  presenca: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-  falta: 'border-red-200 bg-red-50 text-red-900',
-  abono: 'border-amber-200 bg-amber-50 text-amber-950',
-  formacao: 'border-violet-200 bg-violet-50 text-violet-900',
+const dotStyles: Record<RegistroTipo, string> = {
+  presenca: 'bg-emerald-500',
+  falta: 'bg-red-500',
+  abono: 'bg-amber-400',
+  formacao: 'bg-slate-400',
 }
 
 function buildDraft(registro: EffectiveRegistro | Registro | null, day: string, tipo?: RegistroTipo): RegistroDraft {
@@ -39,6 +39,7 @@ function buildDraft(registro: EffectiveRegistro | Registro | null, day: string, 
       hora_entrada: null,
       hora_saida: null,
       hora_extra: null,
+      anexo_atestado: base.tipo === 'falta' ? base.anexo_atestado : null,
     }
   }
 
@@ -50,6 +51,7 @@ function buildDraft(registro: EffectiveRegistro | Registro | null, day: string, 
       hora_entrada: null,
       hora_saida: null,
       hora_extra: null,
+      anexo_atestado: null,
     }
   }
 
@@ -60,131 +62,219 @@ function buildDraft(registro: EffectiveRegistro | Registro | null, day: string, 
     hora_entrada: base.tipo === 'presenca' ? base.hora_entrada : null,
     hora_saida: base.tipo === 'presenca' ? base.hora_saida : null,
     hora_extra: base.tipo === 'presenca' ? base.hora_extra : null,
+    anexo_atestado: null,
   }
 }
 
-function summaryLabel(registro: EffectiveRegistro | null): string {
-  if (!registro) return 'Sem registro'
-  if (registro.tipo === 'falta') return registro.motivo || (registro.atestado_medico ? 'Falta com atestado' : 'Falta')
-  if (registro.tipo === 'abono') return registro.motivo || 'Abono'
-  if (registro.tipo === 'formacao') return 'Formação programada'
-  if (registro.hora_extra) return `Extra: ${registro.hora_extra}`
-  if (registro.hora_entrada && registro.hora_saida) return `${registro.hora_entrada} às ${registro.hora_saida}`
-  return 'Presença'
+function statusLabel(tipo: RegistroTipo | null): string {
+  switch (tipo) {
+    case 'presenca':
+      return 'Presença'
+    case 'falta':
+      return 'Falta'
+    case 'abono':
+      return 'Abono'
+    case 'formacao':
+      return 'Formação'
+    default:
+      return 'Sem registro'
+  }
 }
 
-function DayEditor({
+async function fileToAttachment(file: File): Promise<RegistroAnexo> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Falha ao ler o arquivo.'))
+    reader.readAsDataURL(file)
+  })
+
+  return {
+    file_name: file.name,
+    mime_type: file.type,
+    data_url: dataUrl,
+  }
+}
+
+function DayDetailModal({
+  day,
   draft,
-  disabled,
+  locked,
+  onClose,
   onChange,
+  onSave,
+  onRemove,
 }: {
+  day: string
   draft: RegistroDraft
-  disabled?: boolean
+  locked: boolean
+  onClose: () => void
   onChange: (next: RegistroDraft) => void
+  onSave: () => Promise<void>
+  onRemove: () => Promise<void>
 }) {
-  function setTipo(tipo: RegistroTipo) {
-    onChange(buildDraft({ day: '', locked: false, ...draft }, '', tipo))
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const attachment = await fileToAttachment(file)
+    onChange({ ...draft, atestado_medico: true, anexo_atestado: attachment, tipo: 'falta' })
+    event.target.value = ''
   }
+
+  const isImage = Boolean(draft.anexo_atestado?.mime_type.startsWith('image/'))
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-4">
-        {(['presenca', 'falta', 'abono'] as RegistroTipo[]).map((tipo) => (
-          <button
-            key={tipo}
-            type="button"
-            disabled={disabled}
-            onClick={() => setTipo(tipo)}
-            className={`min-h-12 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-              draft.tipo === tipo ? statusStyles[tipo] : 'border-slate-200 bg-white text-slate-600'
-            } disabled:cursor-not-allowed disabled:opacity-60`}
-          >
-            {tipo === 'presenca' ? 'Presença' : tipo === 'falta' ? 'Falta' : 'Abono'}
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-3 sm:items-center sm:p-6">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-[28px] bg-white p-4 shadow-2xl sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Detalhes do dia</p>
+            <h4 className="text-2xl font-semibold text-slate-900">{new Date(`${day}T00:00:00`).toLocaleDateString('pt-BR')}</h4>
+            <p className="mt-1 text-sm text-slate-600">
+              {locked ? 'Dia vinculado a formação. Consulta liberada, edição manual bloqueada.' : 'Edite horários, observações e anexo de atestado neste painel.'}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
+            Fechar
           </button>
-        ))}
-      </div>
+        </div>
 
-      {(draft.tipo === 'falta' || draft.tipo === 'abono') && (
-        <div className="grid gap-3">
-          <label className="text-sm font-medium text-slate-700">
-            Motivo
-            <input
-              disabled={disabled}
-              value={draft.motivo ?? ''}
-              onChange={(event) => onChange({ ...draft, motivo: event.target.value || null })}
-              placeholder={draft.tipo === 'abono' ? 'Ex: compensação, folga autorizada' : 'Ex: consulta, faculdade, indisposição'}
-              className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-            />
-          </label>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {(['presenca', 'falta', 'abono'] as RegistroTipo[]).map((tipo) => (
+            <button
+              key={tipo}
+              type="button"
+              disabled={locked}
+              onClick={() => onChange(buildDraft({ day, locked, ...draft }, day, tipo))}
+              className={`min-h-12 rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                draft.tipo === tipo ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'
+              } disabled:cursor-not-allowed disabled:opacity-50`}
+            >
+              {statusLabel(tipo)}
+            </button>
+          ))}
+        </div>
 
-          {draft.tipo === 'falta' && (
-            <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+        {(draft.tipo === 'falta' || draft.tipo === 'abono') && (
+          <div className="mt-4 grid gap-4">
+            <label className="text-sm font-medium text-slate-700">
+              Motivo
               <input
-                disabled={disabled}
-                type="checkbox"
-                checked={draft.atestado_medico}
-                onChange={(event) => onChange({ ...draft, atestado_medico: event.target.checked })}
+                disabled={locked}
+                value={draft.motivo ?? ''}
+                onChange={(event) => onChange({ ...draft, motivo: event.target.value || null })}
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
+                placeholder={draft.tipo === 'abono' ? 'Ex: folga compensada, autorização' : 'Ex: consulta, indisposição, universidade'}
               />
-              Possui atestado médico
             </label>
-          )}
-        </div>
-      )}
 
-      {draft.tipo === 'presenca' && (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="text-sm font-medium text-slate-700">
-            Hora de entrada
-            <input
-              disabled={disabled}
-              type="time"
-              value={draft.hora_entrada ?? ''}
-              onChange={(event) => onChange({ ...draft, hora_entrada: event.target.value || null })}
-              className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-            />
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            Hora de saída
-            <input
-              disabled={disabled}
-              type="time"
-              value={draft.hora_saida ?? ''}
-              onChange={(event) => onChange({ ...draft, hora_saida: event.target.value || null })}
-              className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-            />
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            Hora extra
-            <input
-              disabled={disabled}
-              value={draft.hora_extra ?? ''}
-              onChange={(event) => onChange({ ...draft, hora_extra: event.target.value || null })}
-              placeholder="Ex: 01:30"
-              className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-            />
-          </label>
+            {draft.tipo === 'falta' && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
+                  <input
+                    disabled={locked}
+                    type="checkbox"
+                    checked={draft.atestado_medico}
+                    onChange={(event) => onChange({ ...draft, atestado_medico: event.target.checked })}
+                  />
+                  Possui atestado médico
+                </label>
+                <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-slate-300 px-4 py-3 text-sm font-medium text-slate-700">
+                  <input disabled={locked} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFileChange} />
+                  Anexar PDF ou imagem
+                </label>
+              </div>
+            )}
+
+            {draft.anexo_atestado ? (
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-slate-900">{draft.anexo_atestado.file_name}</p>
+                    <p className="text-sm text-slate-500">Pré-visualização do atestado</p>
+                  </div>
+                  <a
+                    href={draft.anexo_atestado.data_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                  >
+                    Abrir anexo
+                  </a>
+                </div>
+                {isImage ? (
+                  <img src={draft.anexo_atestado.data_url} alt="Atestado anexado" className="mt-4 max-h-72 w-full rounded-2xl object-contain" />
+                ) : (
+                  <div className="mt-4 rounded-2xl bg-white p-4 text-sm text-slate-600">Arquivo em PDF pronto para visualização em nova guia.</div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {draft.tipo === 'presenca' && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="text-sm font-medium text-slate-700">
+              Hora de entrada
+              <input
+                disabled={locked}
+                type="time"
+                value={draft.hora_entrada ?? ''}
+                onChange={(event) => onChange({ ...draft, hora_entrada: event.target.value || null })}
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Hora de saída
+              <input
+                disabled={locked}
+                type="time"
+                value={draft.hora_saida ?? ''}
+                onChange={(event) => onChange({ ...draft, hora_saida: event.target.value || null })}
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Hora extra
+              <input
+                disabled={locked}
+                value={draft.hora_extra ?? ''}
+                onChange={(event) => onChange({ ...draft, hora_extra: event.target.value || null })}
+                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
+                placeholder="Ex: 01:30"
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => void onSave()}
+            className="min-h-12 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Salvar
+          </button>
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => void onRemove()}
+            className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-700 disabled:opacity-50"
+          >
+            Remover registro
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-export function MonthlyCalendar({
-  registros,
-  formacaoDays,
-  onSaveRegistro,
-  onRemoveRegistro,
-  onSaveManyRegistros,
-}: MonthlyCalendarProps) {
+export function MonthlyCalendar({ registros, formacaoDays, onSaveRegistro, onRemoveRegistro, onSaveManyRegistros }: MonthlyCalendarProps) {
   const now = new Date()
   const todayKey = toDateValue(now)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const gesture = useRef<{ active: boolean; pointerId: number | null; mode: 'select' | null; value: boolean }>({
-    active: false,
-    pointerId: null,
-    mode: null,
-    value: true,
-  })
+  const gesture = useRef<{ active: boolean; value: boolean }>({ active: false, value: true })
 
   const [referenceDate, setReferenceDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1))
   const [selectedDays, setSelectedDays] = useState<string[]>([])
@@ -249,45 +339,34 @@ export function MonthlyCalendar({
     })
   }
 
-  function startGesture(pointerId: number, value: boolean) {
-    gesture.current = { active: true, pointerId, mode: 'select', value }
-  }
-
-  function clearGesture() {
-    gesture.current = { active: false, pointerId: null, mode: null, value: true }
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current)
-      holdTimer.current = null
-    }
-  }
-
-  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>, day: string) {
-    const target = event.target as HTMLElement
-    if (target.closest('button, input, select, textarea, label')) return
+  function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>, day: string) {
     const registro = effectiveMap.get(day)
     if (registro?.locked) return
-
     const nextValue = !selectedDays.includes(day)
 
     if (event.pointerType === 'mouse') {
-      startGesture(event.pointerId, nextValue)
+      gesture.current = { active: true, value: nextValue }
       toggleDaySelection(day, nextValue)
       return
     }
 
     holdTimer.current = setTimeout(() => {
-      startGesture(event.pointerId, nextValue)
+      gesture.current = { active: true, value: nextValue }
       toggleDaySelection(day, nextValue)
     }, 320)
   }
 
   function handlePointerEnter(day: string) {
-    if (!gesture.current.active || gesture.current.mode !== 'select') return
+    if (!gesture.current.active) return
     toggleDaySelection(day, gesture.current.value)
   }
 
-  function handlePointerUp() {
-    clearGesture()
+  function resetPointerState() {
+    gesture.current = { active: false, value: true }
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current)
+      holdTimer.current = null
+    }
   }
 
   function openDayEditor(day: string) {
@@ -296,25 +375,7 @@ export function MonthlyCalendar({
     setEditorDraft(buildDraft(registro, day, registro?.tipo))
   }
 
-  function changeMonth(step: number) {
-    setReferenceDate((current) => new Date(current.getFullYear(), current.getMonth() + step, 1))
-  }
-
-  async function quickSave(day: string, tipo: RegistroTipo) {
-    const registro = effectiveMap.get(day)
-    if (registro?.locked || tipo === 'formacao') return
-    await onSaveRegistro({ day, ...buildDraft(registro ?? null, day, tipo) })
-  }
-
-  async function saveEditor() {
-    if (!editorDay || !editorDraft) return
-    const registro = effectiveMap.get(editorDay)
-    if (registro?.locked) return
-    await onSaveRegistro({ day: editorDay, ...editorDraft })
-  }
-
   async function applyBatch() {
-    if (selectedDays.length === 0) return
     const editableDays = selectedDays.filter((day) => !effectiveMap.get(day)?.locked)
     if (editableDays.length === 0) return
     await onSaveManyRegistros(editableDays, batchDraft)
@@ -327,36 +388,24 @@ export function MonthlyCalendar({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Assiduidade</p>
           <h3 className="text-2xl font-semibold text-slate-900">{monthLabel}</h3>
-          <p className="mt-1 text-sm text-slate-600">Arraste no desktop ou pressione e segure no celular para selecionar vários dias.</p>
+          <p className="mt-1 text-sm text-slate-600">Cores e ícones mostram o status do mês. Toque no dia para abrir os detalhes.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button type="button" onClick={() => changeMonth(-1)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium">
+          <button type="button" onClick={() => setReferenceDate((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium">
             Mês anterior
           </button>
-          <button type="button" onClick={() => changeMonth(1)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium">
+          <button type="button" onClick={() => setReferenceDate((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium">
             Próximo mês
           </button>
-          <select
-            value={referenceDate.getMonth()}
-            onChange={(event) => setReferenceDate(new Date(referenceDate.getFullYear(), Number(event.target.value), 1))}
-            className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-          >
+          <select value={referenceDate.getMonth()} onChange={(event) => setReferenceDate(new Date(referenceDate.getFullYear(), Number(event.target.value), 1))} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm">
             {monthNames.map((label, index) => (
-              <option key={label} value={index}>
-                {label}
-              </option>
+              <option key={label} value={index}>{label}</option>
             ))}
           </select>
-          <select
-            value={referenceDate.getFullYear()}
-            onChange={(event) => setReferenceDate(new Date(Number(event.target.value), referenceDate.getMonth(), 1))}
-            className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm"
-          >
+          <select value={referenceDate.getFullYear()} onChange={(event) => setReferenceDate(new Date(Number(event.target.value), referenceDate.getMonth(), 1))} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm">
             {yearOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
+              <option key={year} value={year}>{year}</option>
             ))}
           </select>
         </div>
@@ -366,31 +415,29 @@ export function MonthlyCalendar({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-slate-900">Ações em lote</h4>
-            <p className="text-sm text-slate-600">Depois de selecionar os dias, aplique presença, falta ou abono de uma vez.</p>
+            <p className="text-sm text-slate-600">Selecione vários dias e aplique rapidamente presença, falta ou abono.</p>
           </div>
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-            {selectedDays.length} dia(s) selecionado(s)
-          </div>
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700">{selectedDays.length} dia(s) selecionado(s)</div>
         </div>
 
-        <div className="mt-4">
-          <DayEditor draft={batchDraft} onChange={setBatchDraft} />
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          {(['presenca', 'falta', 'abono'] as RegistroTipo[]).map((tipo) => (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => setBatchDraft(buildDraft({ day: '', locked: false, ...batchDraft }, '', tipo))}
+              className={`min-h-12 rounded-2xl border px-4 py-3 text-sm font-semibold ${batchDraft.tipo === tipo ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-700'}`}
+            >
+              {statusLabel(tipo)}
+            </button>
+          ))}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={applyBatch}
-            disabled={selectedDays.length === 0}
-            className="min-h-12 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-          >
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <button type="button" onClick={applyBatch} disabled={selectedDays.length === 0} className="min-h-12 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
             Aplicar aos selecionados
           </button>
-          <button
-            type="button"
-            onClick={() => setSelectedDays([])}
-            className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium"
-          >
+          <button type="button" onClick={() => setSelectedDays([])} className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium">
             Limpar seleção
           </button>
         </div>
@@ -398,172 +445,87 @@ export function MonthlyCalendar({
 
       <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
         {weekDays.map((label) => (
-          <div key={label} className="rounded-2xl bg-slate-100 py-3">
-            {label}
-          </div>
+          <div key={label} className="rounded-2xl bg-slate-100 py-3">{label}</div>
         ))}
       </div>
 
       <div className="grid grid-cols-7 gap-2 sm:gap-3">
         {cells.map(({ id, day }) => {
           if (!day) {
-            return <div key={id} className="min-h-32 rounded-[24px] bg-slate-50/80 sm:min-h-40" aria-hidden="true" />
+            return <div key={id} className="min-h-24 rounded-[24px] bg-slate-50/80 sm:min-h-28" aria-hidden="true" />
           }
 
           const dateKey = toDateValue(day)
           const registro = effectiveMap.get(dateKey) ?? null
           const isToday = dateKey === todayKey
           const isSelected = selectedDays.includes(dateKey)
-          const appearance =
-            registro?.tipo ? statusStyles[registro.tipo] : isToday ? 'border-sky-300 bg-sky-50 text-slate-900' : 'border-slate-200 bg-white text-slate-900'
+          const hasAttachment = Boolean(registro?.anexo_atestado)
+          const hasMedical = Boolean(registro?.atestado_medico)
 
           return (
-            <div
+            <button
               key={dateKey}
+              type="button"
               onPointerDown={(event) => handlePointerDown(event, dateKey)}
               onPointerEnter={() => handlePointerEnter(dateKey)}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className={`min-h-36 rounded-[24px] border p-3 transition sm:min-h-44 ${appearance} ${
+              onPointerUp={resetPointerState}
+              onPointerCancel={resetPointerState}
+              onClick={() => openDayEditor(dateKey)}
+              className={`relative min-h-24 rounded-[24px] border p-2 text-left transition sm:min-h-28 ${
+                isToday ? 'border-sky-300 shadow-[0_0_0_2px_rgba(14,165,233,0.15)]' : 'border-slate-200'
+              } ${registro?.tipo === 'formacao' ? 'bg-[repeating-linear-gradient(135deg,#f5f3ff,#f5f3ff_10px,#ede9fe_10px,#ede9fe_20px)]' : 'bg-white'} ${
                 isSelected ? 'ring-2 ring-slate-900 ring-offset-2' : ''
-              } ${registro?.locked ? 'opacity-95' : ''}`}
+              }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm ${
-                    isToday ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
-                  }`}
-                >
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${isToday ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'}`}>
                   {day.getDate()}
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  {registro?.locked ? (
-                    <span className="rounded-full bg-violet-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">
-                      Congelado
-                    </span>
-                  ) : null}
-                  {isToday ? (
-                    <span className="rounded-full bg-sky-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-700">
-                      Hoje
-                    </span>
-                  ) : null}
+                </span>
+                <div className="flex items-center gap-1">
+                  {registro ? <span className={`h-3 w-3 rounded-full ${dotStyles[registro.tipo]}`} /> : null}
+                  {hasAttachment ? <span className="text-xs text-slate-600">📎</span> : null}
+                  {hasMedical && !hasAttachment ? <span className="text-xs text-red-500">✚</span> : null}
                 </div>
               </div>
 
-              <div className="mt-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  {registro?.tipo === 'presenca'
-                    ? 'Presença'
-                    : registro?.tipo === 'falta'
-                      ? 'Falta'
-                      : registro?.tipo === 'abono'
-                        ? 'Abono'
-                        : registro?.tipo === 'formacao'
-                          ? 'Formação'
-                          : 'Sem registro'}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-700">{summaryLabel(registro)}</p>
+              <div className="mt-3 flex min-h-8 items-end justify-between">
+                <div className="flex items-center gap-1">
+                  {registro?.tipo ? <span className={`h-2.5 w-2.5 rounded-full ${dotStyles[registro.tipo]}`} /> : <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />}
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{registro ? statusLabel(registro.tipo) : 'Livre'}</span>
+                </div>
+                {registro?.tipo === 'formacao' ? <span className="text-[10px] text-slate-400">✦</span> : null}
               </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => openDayEditor(dateKey)}
-                  className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
-                >
-                  Detalhes
-                </button>
-                <button
-                  type="button"
-                  disabled={registro?.locked}
-                  onClick={() => toggleDaySelection(dateKey)}
-                  className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSelected ? 'Selecionado' : 'Selecionar'}
-                </button>
-                <button
-                  type="button"
-                  disabled={registro?.locked}
-                  onClick={() => quickSave(dateKey, 'presenca')}
-                  className="min-h-11 rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Presença
-                </button>
-                <button
-                  type="button"
-                  disabled={registro?.locked}
-                  onClick={() => quickSave(dateKey, 'falta')}
-                  className="min-h-11 rounded-2xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Falta
-                </button>
-                <button
-                  type="button"
-                  disabled={registro?.locked}
-                  onClick={() => quickSave(dateKey, 'abono')}
-                  className="min-h-11 rounded-2xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Abono
-                </button>
-                <button
-                  type="button"
-                  disabled={registro?.locked}
-                  onClick={() => onRemoveRegistro(dateKey)}
-                  className="min-h-11 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Limpar
-                </button>
-              </div>
-            </div>
+            </button>
           )
         })}
       </div>
 
-      {editorDay && editorDraft ? (
-        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h4 className="text-lg font-semibold text-slate-900">
-                Detalhes do dia {new Date(`${editorDay}T00:00:00`).toLocaleDateString('pt-BR')}
-              </h4>
-              <p className="text-sm text-slate-600">
-                {effectiveMap.get(editorDay)?.locked
-                  ? 'Este dia está congelado porque foi marcado como formação.'
-                  : 'Preencha os detalhes de assiduidade para esse dia.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setEditorDay(null)}
-              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium"
-            >
-              Fechar
-            </button>
-          </div>
-
-          <div className="mt-4">
-            <DayEditor draft={editorDraft} disabled={effectiveMap.get(editorDay)?.locked} onChange={setEditorDraft} />
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              disabled={effectiveMap.get(editorDay)?.locked}
-              onClick={saveEditor}
-              className="min-h-12 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Salvar dia
-            </button>
-            <button
-              type="button"
-              disabled={effectiveMap.get(editorDay)?.locked}
-              onClick={() => onRemoveRegistro(editorDay)}
-              className="min-h-12 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-medium disabled:opacity-50"
-            >
-              Remover registro
-            </button>
-          </div>
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
+        <div className="flex flex-wrap gap-4">
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-500" /> Presença</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-red-500" /> Falta</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-amber-400" /> Abono</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-slate-400" /> Formação</span>
+          <span className="inline-flex items-center gap-2">📎 Atestado anexado</span>
         </div>
+      </div>
+
+      {editorDay && editorDraft ? (
+        <DayDetailModal
+          day={editorDay}
+          draft={editorDraft}
+          locked={Boolean(effectiveMap.get(editorDay)?.locked)}
+          onClose={() => setEditorDay(null)}
+          onChange={setEditorDraft}
+          onSave={async () => {
+            await onSaveRegistro({ day: editorDay, ...editorDraft })
+            setEditorDay(null)
+          }}
+          onRemove={async () => {
+            await onRemoveRegistro(editorDay)
+            setEditorDay(null)
+          }}
+        />
       ) : null}
     </section>
   )

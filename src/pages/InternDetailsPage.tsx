@@ -8,6 +8,7 @@ import type { Estagiaria, Formacao, Registro } from '../types'
 import {
   capitalizeWords,
   formatDate,
+  getEffectiveRegistros,
   getInitialLetter,
   getStatusPrazo,
   normalizeEstagiaria,
@@ -34,12 +35,7 @@ function sortRegistros(registros: Registro[]): Registro[] {
 
 function Chevron({ isOpen }: { isOpen: boolean }) {
   return (
-    <span
-      aria-hidden="true"
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-transform ${
-        isOpen ? 'rotate-180' : ''
-      }`}
-    >
+    <span className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
       ˅
     </span>
   )
@@ -48,11 +44,7 @@ function Chevron({ isOpen }: { isOpen: boolean }) {
 function AccordionSection({ title, subtitle, isOpen, onToggle, children }: AccordionSectionProps) {
   return (
     <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-5 sm:py-5"
-      >
+      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left sm:px-5 sm:py-5">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2>
           <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
@@ -91,9 +83,7 @@ function DiagnosticCard({ presencas, faltas }: { presencas: number; faltas: numb
   }
 
   const pieStyle = {
-    background: total === 0
-      ? 'conic-gradient(#e2e8f0 0deg 360deg)'
-      : `conic-gradient(#10b981 0deg ${percentPresencas * 3.6}deg, #ef4444 ${percentPresencas * 3.6}deg 360deg)`,
+    background: total === 0 ? 'conic-gradient(#e2e8f0 0deg 360deg)' : `conic-gradient(#10b981 0deg ${percentPresencas * 3.6}deg, #ef4444 ${percentPresencas * 3.6}deg 360deg)`,
   }
 
   return (
@@ -150,11 +140,7 @@ export function InternDetailsPage() {
     if (!id) return
     setLoading(true)
     setError('')
-    const { data, error: dbError } = await supabase
-      .from('estagiarias')
-      .select(selectFields)
-      .eq('id', id)
-      .single()
+    const { data, error: dbError } = await supabase.from('estagiarias').select(selectFields).eq('id', id).single()
 
     if (dbError) {
       setError('Não foi possível carregar os detalhes.')
@@ -175,12 +161,7 @@ export function InternDetailsPage() {
       .channel(`estagiaria-details-${id}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'estagiarias',
-          filter: `user_id=eq.${session.user.id}`,
-        },
+        { event: '*', schema: 'public', table: 'estagiarias', filter: `user_id=eq.${session.user.id}` },
         (payload) => {
           const rowId = (payload.new as { id?: string } | null)?.id ?? (payload.old as { id?: string } | null)?.id
           if (rowId === id) fetchOne()
@@ -233,18 +214,12 @@ export function InternDetailsPage() {
     navigate('/')
   }
 
-  const status = useMemo(
-    () => getStatusPrazo(item?.data_limite ?? null, item?.data_devolucao ?? null),
-    [item?.data_devolucao, item?.data_limite],
-  )
+  const status = useMemo(() => getStatusPrazo(item?.data_limite ?? null, item?.data_devolucao ?? null), [item?.data_devolucao, item?.data_limite])
 
-  const formacaoDays = useMemo(
-    () => Array.from(new Set((item?.formacoes ?? []).map((formacao) => formacao.data).filter(Boolean))).sort(),
-    [item?.formacoes],
-  )
+  const formacaoDays = useMemo(() => Array.from(new Set((item?.formacoes ?? []).map((formacao) => formacao.data).filter(Boolean))).sort(), [item?.formacoes])
 
   const diagnostico = useMemo(() => {
-    const registros = item?.registros ?? []
+    const registros = item ? getEffectiveRegistros(item) : []
     return registros.reduce(
       (acc, registro) => {
         if (registro.tipo === 'presenca') acc.presencas += 1
@@ -253,7 +228,7 @@ export function InternDetailsPage() {
       },
       { presencas: 0, faltas: 0 },
     )
-  }, [item?.registros])
+  }, [item])
 
   async function saveRegistro(registro: Registro) {
     if (!item || formacaoDays.includes(registro.day)) return
@@ -333,9 +308,7 @@ export function InternDetailsPage() {
       <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-2xl font-semibold text-white sm:h-20 sm:w-20 sm:text-3xl">
-              {avatarLetter}
-            </div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-2xl font-semibold text-white sm:h-20 sm:w-20 sm:text-3xl">{avatarLetter}</div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Perfil</p>
               <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{item.nome || 'Sem nome'}</h1>
@@ -345,27 +318,14 @@ export function InternDetailsPage() {
 
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">Dias: {item.dias_estagio || '-'}</span>
-            <span
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                status === 'atrasado'
-                  ? 'bg-red-50 text-red-700'
-                  : status === 'em_risco'
-                    ? 'bg-amber-50 text-amber-700'
-                    : 'bg-emerald-50 text-emerald-700'
-              }`}
-            >
+            <span className={`rounded-full px-4 py-2 text-sm font-semibold ${status === 'atrasado' ? 'bg-red-50 text-red-700' : status === 'em_risco' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
               {statusLabel(status)}
             </span>
           </div>
         </div>
       </section>
 
-      <AccordionSection
-        title="Informações da Estagiária"
-        subtitle="Dados principais com foco em leitura rápida no mobile."
-        isOpen={openSections.info}
-        onToggle={() => toggleSection('info')}
-      >
+      <AccordionSection title="Informações da Estagiária" subtitle="Dados principais com foco em leitura rápida no mobile." isOpen={openSections.info} onToggle={() => toggleSection('info')}>
         <div className="space-y-5">
           <div className="flex items-center gap-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-xl font-semibold text-white">{avatarLetter}</div>
@@ -377,105 +337,48 @@ export function InternDetailsPage() {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <label className="text-sm font-medium text-slate-700">
-              Nome
-              <input
-                value={item.nome}
-                onChange={(event) => setItem((prev) => (prev ? { ...prev, nome: event.target.value } : prev))}
-                onBlur={() => patch({ nome: capitalizeWords(item.nome) })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Nome
+              <input value={item.nome} onChange={(event) => setItem((prev) => (prev ? { ...prev, nome: event.target.value } : prev))} onBlur={() => patch({ nome: capitalizeWords(item.nome) })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
-            <label className="text-sm font-medium text-slate-700">
-              Faculdade
-              <input
-                value={item.faculdade}
-                onChange={(event) => setItem((prev) => (prev ? { ...prev, faculdade: event.target.value } : prev))}
-                onBlur={() => patch({ faculdade: capitalizeWords(item.faculdade) })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Faculdade
+              <input value={item.faculdade} onChange={(event) => setItem((prev) => (prev ? { ...prev, faculdade: event.target.value } : prev))} onBlur={() => patch({ faculdade: capitalizeWords(item.faculdade) })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
-            <label className="text-sm font-medium text-slate-700">
-              Dias de estágio
-              <input
-                value={item.dias_estagio}
-                onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))}
-                onBlur={() => patch({ dias_estagio: item.dias_estagio })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Dias de estágio
+              <input value={item.dias_estagio} onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))} onBlur={() => patch({ dias_estagio: item.dias_estagio })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
           </div>
 
-          <label className="block text-sm font-medium text-slate-700">
-            Observações
-            <textarea
-              value={item.observacoes ?? ''}
-              onChange={(event) => setItem((prev) => (prev ? { ...prev, observacoes: event.target.value } : prev))}
-              onBlur={(event) => patch({ observacoes: event.target.value || null })}
-              className="mt-1 min-h-32 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-            />
+          <label className="block text-sm font-medium text-slate-700">Observações
+            <textarea value={item.observacoes ?? ''} onChange={(event) => setItem((prev) => (prev ? { ...prev, observacoes: event.target.value } : prev))} onBlur={(event) => patch({ observacoes: event.target.value || null })} className="mt-1 min-h-32 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
           </label>
         </div>
       </AccordionSection>
 
-      <AccordionSection
-        title="Assiduidade"
-        subtitle="Calendário ampliado, seleção múltipla e formações bloqueadas automaticamente."
-        isOpen={openSections.assiduidade}
-        onToggle={() => toggleSection('assiduidade')}
-      >
+      <AccordionSection title="Assiduidade" subtitle="Calendário visual, seleção múltipla, formações automáticas e anexo de atestado por dia." isOpen={openSections.assiduidade} onToggle={() => toggleSection('assiduidade')}>
         <div className="space-y-6">
-          <MonthlyCalendar
-            registros={item.registros ?? []}
-            formacaoDays={formacaoDays}
-            onSaveRegistro={saveRegistro}
-            onRemoveRegistro={removeRegistro}
-            onSaveManyRegistros={saveManyRegistros}
-          />
+          <MonthlyCalendar registros={item.registros ?? []} formacaoDays={formacaoDays} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
 
           <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-xl font-semibold text-slate-900">Formações</h3>
-                <p className="text-sm text-slate-600">Ao cadastrar uma formação, o dia correspondente fica marcado automaticamente e bloqueado no calendário.</p>
+                <p className="text-sm text-slate-600">Ao cadastrar uma formação, o dia correspondente fica marcado automaticamente no calendário e deixa de aceitar edição manual.</p>
               </div>
               <span className="rounded-full bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700">{formacaoDays.length} dia(s) de formação</span>
             </div>
 
             <form onSubmit={addFormacao} className="mt-4 grid gap-3 lg:grid-cols-5">
-              <input
-                required
-                value={newFormacao.nome}
-                onChange={(event) => setNewFormacao((prev) => ({ ...prev, nome: event.target.value }))}
-                placeholder="Nome da formação"
-                className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base lg:col-span-2"
-              />
-              <input
-                required
-                type="date"
-                value={newFormacao.data}
-                onChange={(event) => setNewFormacao((prev) => ({ ...prev, data: event.target.value }))}
-                className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+              <input required value={newFormacao.nome} onChange={(event) => setNewFormacao((prev) => ({ ...prev, nome: event.target.value }))} placeholder="Nome da formação" className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base lg:col-span-2" />
+              <input required type="date" value={newFormacao.data} onChange={(event) => setNewFormacao((prev) => ({ ...prev, data: event.target.value }))} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
               <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={newFormacao.presente}
-                  onChange={() => setNewFormacao((prev) => ({ ...prev, presente: true }))}
-                />
+                <input type="checkbox" checked={newFormacao.presente} onChange={() => setNewFormacao((prev) => ({ ...prev, presente: true }))} />
                 Presente
               </label>
               <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={!newFormacao.presente}
-                  onChange={() => setNewFormacao((prev) => ({ ...prev, presente: false }))}
-                />
+                <input type="checkbox" checked={!newFormacao.presente} onChange={() => setNewFormacao((prev) => ({ ...prev, presente: false }))} />
                 Ausente
               </label>
-              <button className="min-h-12 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white lg:col-span-5" type="submit">
-                Adicionar formação
-              </button>
+              <button className="min-h-12 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white lg:col-span-5" type="submit">Adicionar formação</button>
             </form>
 
             <div className="mt-4 space-y-3">
@@ -486,20 +389,12 @@ export function InternDetailsPage() {
                       <p className="font-semibold text-slate-900">{formacao.nome}</p>
                       <p className="text-sm text-slate-600">{formatDate(formacao.data)}</p>
                     </div>
-                    <span className="rounded-full bg-violet-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
-                      Congela o dia no calendário
-                    </span>
+                    <span className="rounded-full bg-violet-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">Formação</span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={formacao.presente} onChange={() => togglePresenca(index, true)} />
-                      Presente
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={!formacao.presente} onChange={() => togglePresenca(index, false)} />
-                      Ausente
-                    </label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={formacao.presente} onChange={() => togglePresenca(index, true)} />Presente</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={!formacao.presente} onChange={() => togglePresenca(index, false)} />Ausente</label>
                   </div>
                 </div>
               ))}
@@ -508,46 +403,20 @@ export function InternDetailsPage() {
         </div>
       </AccordionSection>
 
-      <AccordionSection
-        title="Documentos"
-        subtitle="Datas principais com resumo visual para leitura rápida."
-        isOpen={openSections.documentos}
-        onToggle={() => toggleSection('documentos')}
-      >
+      <AccordionSection title="Documentos" subtitle="Datas principais com resumo visual para leitura rápida." isOpen={openSections.documentos} onToggle={() => toggleSection('documentos')}>
         <div className="space-y-5">
           <div className="grid gap-4 lg:grid-cols-3">
-            <label className="text-sm font-medium text-slate-700">
-              Recebimento
-              <input
-                type="date"
-                value={item.data_recebimento ?? ''}
-                onChange={(event) => patch({ data_recebimento: event.target.value || null })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Recebimento
+              <input type="date" value={item.data_recebimento ?? ''} onChange={(event) => patch({ data_recebimento: event.target.value || null })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
-            <label className="text-sm font-medium text-slate-700">
-              Data limite
-              <input
-                type="date"
-                value={item.data_limite ?? ''}
-                onChange={(event) => patch({ data_limite: event.target.value || null })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Data limite
+              <input type="date" value={item.data_limite ?? ''} onChange={(event) => patch({ data_limite: event.target.value || null })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
-            <label className="text-sm font-medium text-slate-700">
-              Devolução
-              <input
-                type="date"
-                value={item.data_devolucao ?? ''}
-                onChange={(event) => patch({ data_devolucao: event.target.value || null })}
-                className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base"
-              />
+            <label className="text-sm font-medium text-slate-700">Devolução
+              <input type="date" value={item.data_devolucao ?? ''} onChange={(event) => patch({ data_devolucao: event.target.value || null })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
           </div>
-
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-            Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} | Devolução: {formatDate(item.data_devolucao)}
-          </div>
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} | Devolução: {formatDate(item.data_devolucao)}</div>
         </div>
       </AccordionSection>
 

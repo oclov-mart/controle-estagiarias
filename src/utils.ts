@@ -1,4 +1,4 @@
-import type { Estagiaria, Formacao, Registro, RegistroTipo, StatusPrazo } from './types'
+﻿import type { Estagiaria, Formacao, Registro, RegistroTipo, ReportRow, StatusPrazo } from './types'
 
 export function capitalizeWords(value: string): string {
   return value
@@ -28,6 +28,7 @@ export function createEmptyRegistro(day: string, tipo: RegistroTipo = 'presenca'
     hora_entrada: null,
     hora_saida: null,
     hora_extra: null,
+    anexo_atestado: null,
   }
 }
 
@@ -45,6 +46,7 @@ export function normalizeRegistro(
     hora_entrada: raw.hora_entrada ?? null,
     hora_saida: raw.hora_saida ?? null,
     hora_extra: raw.hora_extra ?? (raw.tipo === 'extra' ? 'Sim' : null),
+    anexo_atestado: raw.anexo_atestado ?? null,
   }
 }
 
@@ -132,4 +134,90 @@ export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
     created_at: raw.created_at ?? '',
     updated_at: raw.updated_at ?? '',
   }
+}
+
+export function parseDurationToMinutes(value: string | null): number {
+  if (!value) return 0
+  const normalized = value.trim()
+  const match = normalized.match(/^(\d{1,2}):(\d{2})$/)
+  if (!match) return 0
+  const [, hours, minutes] = match
+  return Number(hours) * 60 + Number(minutes)
+}
+
+export function formatMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+export function getEffectiveRegistros(estagiaria: Estagiaria): Registro[] {
+  const registrosMap = new Map<string, Registro>()
+
+  estagiaria.registros.forEach((registro) => {
+    registrosMap.set(registro.day, registro)
+  })
+
+  estagiaria.formacoes.forEach((formacao) => {
+    registrosMap.set(formacao.data, {
+      ...createEmptyRegistro(formacao.data, 'formacao'),
+      motivo: formacao.nome,
+    })
+  })
+
+  return Array.from(registrosMap.values()).sort((a, b) => a.day.localeCompare(b.day))
+}
+
+export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date): {
+  presencas: number
+  faltas: number
+  abonos: number
+  formacoes: number
+  horasExtras: number
+} {
+  const monthKey = toDateValue(new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1)).slice(0, 7)
+  const registros = getEffectiveRegistros(estagiaria).filter((registro) => registro.day.startsWith(monthKey))
+
+  return registros.reduce(
+    (acc, registro) => {
+      if (registro.tipo === 'presenca') acc.presencas += 1
+      if (registro.tipo === 'falta') acc.faltas += 1
+      if (registro.tipo === 'abono') acc.abonos += 1
+      if (registro.tipo === 'formacao') acc.formacoes += 1
+      acc.horasExtras += parseDurationToMinutes(registro.hora_extra)
+      return acc
+    },
+    { presencas: 0, faltas: 0, abonos: 0, formacoes: 0, horasExtras: 0 },
+  )
+}
+
+export function buildReportRows(items: Estagiaria[], referenceDate: Date): ReportRow[] {
+  return items.map((item) => {
+    const metrics = getMonthlyMetrics(item, referenceDate)
+    return {
+      id: item.id,
+      nome: item.nome,
+      faculdade: item.faculdade,
+      dias_estagio: item.dias_estagio,
+      presencas: metrics.presencas,
+      faltas: metrics.faltas,
+      horas_extras: formatMinutes(metrics.horasExtras),
+      ultimo_prazo: formatDate(item.data_limite),
+      status: statusLabel(getStatusPrazo(item.data_limite, item.data_devolucao)),
+    }
+  })
+}
+
+export function getMonthRangeLabel(referenceDate: Date): string {
+  return referenceDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+}
+
+export function buildReportLink(origin: string, ids: string[], referenceDate: Date): string {
+  const url = new URL('/relatorio', origin)
+  url.searchParams.set('month', String(referenceDate.getMonth() + 1))
+  url.searchParams.set('year', String(referenceDate.getFullYear()))
+  if (ids.length > 0) {
+    url.searchParams.set('ids', ids.join(','))
+  }
+  return url.toString()
 }
