@@ -35,7 +35,8 @@ export function normalizeRegistro(
   raw: Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' },
 ): Registro {
   const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo
-  const tipo: RegistroTipo = legacyTipo === 'falta' ? 'falta' : 'presenca'
+  const tipo: RegistroTipo =
+    legacyTipo === 'falta' || legacyTipo === 'abono' || legacyTipo === 'formacao' ? legacyTipo : 'presenca'
 
   return {
     ...createEmptyRegistro(raw.day ?? raw.data ?? '', tipo),
@@ -45,6 +46,10 @@ export function normalizeRegistro(
     hora_saida: raw.hora_saida ?? null,
     hora_extra: raw.hora_extra ?? (raw.tipo === 'extra' ? 'Sim' : null),
   }
+}
+
+export function getInitialLetter(value: string): string {
+  return value.trim().charAt(0).toUpperCase() || '?'
 }
 
 export function getStatusPrazo(dataLimite: string | null, dataDevolucao: string | null): StatusPrazo {

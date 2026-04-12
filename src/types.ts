@@ -1,7 +1,6 @@
-export type RegistroTipo = 'falta' | 'presenca'
+export type RegistroTipo = 'presenca' | 'falta' | 'abono' | 'formacao'
 
 export type Registro = {
-  // Dia no formato YYYY-MM-DD.
   day: string
   tipo: RegistroTipo
   motivo: string | null
