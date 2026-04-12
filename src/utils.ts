@@ -46,10 +46,10 @@ export function statusLabel(status: StatusPrazo): string {
 }
 
 export function monthDays(referenceDate: Date): Date[] {
-  // Requisito: exibir sempre 30 dias.
   const year = referenceDate.getFullYear()
   const month = referenceDate.getMonth()
-  return Array.from({ length: 30 }, (_, index) => new Date(year, month, index + 1))
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  return Array.from({ length: lastDay }, (_, index) => new Date(year, month, index + 1))
 }
 
 export function validateDateFlow(payload: {
