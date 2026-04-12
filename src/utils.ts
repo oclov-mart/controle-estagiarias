@@ -1,4 +1,4 @@
-import type { Estagiaria, Formacao, Registro, StatusPrazo } from './types'
+import type { Estagiaria, Formacao, Registro, RegistroTipo, StatusPrazo } from './types'
 
 export function capitalizeWords(value: string): string {
   return value
@@ -17,6 +17,32 @@ export function formatDate(date: string | null): string {
 
 export function toDateValue(date: Date): string {
   return date.toISOString().slice(0, 10)
+}
+
+export function createEmptyRegistro(day: string, tipo: RegistroTipo = 'presenca'): Registro {
+  return {
+    day,
+    tipo,
+    motivo: null,
+    atestado_medico: false,
+    hora_entrada: null,
+    hora_saida: null,
+    hora_extra: null,
+  }
+}
+
+export function normalizeRegistro(raw: Partial<Registro> & { data?: string; tipo?: string }): Registro {
+  const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo
+  const tipo: RegistroTipo = legacyTipo === 'falta' ? 'falta' : 'presenca'
+
+  return {
+    ...createEmptyRegistro(raw.day ?? raw.data ?? '', tipo),
+    motivo: raw.motivo ?? null,
+    atestado_medico: raw.atestado_medico ?? false,
+    hora_entrada: raw.hora_entrada ?? null,
+    hora_saida: raw.hora_saida ?? null,
+    hora_extra: raw.hora_extra ?? (raw.tipo === 'extra' ? 'Sim' : null),
+  }
 }
 
 export function getStatusPrazo(dataLimite: string | null, dataDevolucao: string | null): StatusPrazo {
@@ -71,11 +97,8 @@ export function validateDateFlow(payload: {
 }
 
 export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
-  const registros = ((raw.registros as Array<{ day?: string; data?: string; tipo: Registro['tipo'] }>) ?? []).map(
-    (item) => ({
-      day: item.day ?? item.data ?? '',
-      tipo: item.tipo,
-    }),
+  const registros = ((raw.registros as Array<Partial<Registro> & { data?: string; tipo?: string }>) ?? []).map(
+    normalizeRegistro,
   )
   const formacoes = (
     (raw.formacoes as Array<{ nome: string; data: string; presente?: boolean; presenca?: boolean }>) ?? []

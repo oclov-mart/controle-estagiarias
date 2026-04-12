@@ -1,7 +1,14 @@
+export type RegistroTipo = 'falta' | 'presenca'
+
 export type Registro = {
   // Dia no formato YYYY-MM-DD.
   day: string
-  tipo: 'falta' | 'extra'
+  tipo: RegistroTipo
+  motivo: string | null
+  atestado_medico: boolean
+  hora_entrada: string | null
+  hora_saida: string | null
+  hora_extra: string | null
 }
 
 export type Formacao = {
