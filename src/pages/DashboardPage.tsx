@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import * as XLSX from 'xlsx'
@@ -19,7 +19,7 @@ import {
 } from '../utils'
 
 type FiltroStatus = 'todas' | 'atrasado' | 'em_risco'
-type DashboardTab = 'monitoramento' | 'gestao'
+type DashboardTab = 'monitoramento'
 
 type ShareModalState = {
   open: boolean
@@ -79,7 +79,7 @@ async function logExport(action: string, scope: string, reportTitle: string, row
       rows_count: rowsCount,
     })
   } catch {
-    // Mantém auditoria local quando a tabela ainda não existir no banco.
+    // Mantm auditoria local quando a tabela ainda no existir no banco.
   }
 }
 
@@ -88,16 +88,16 @@ function downloadExcel(rows: ReportRow[], reportTitle: string) {
     rows.map((row) => ({
       Nome: row.nome,
       Faculdade: row.faculdade,
-      'Dias de estágio': row.dias_estagio,
-      Presenças: row.presencas,
+      'Dias de estgio': row.dias_estagio,
+      Presenas: row.presencas,
       Faltas: row.faltas,
       'Horas extras': row.horas_extras,
-      'Último prazo': row.ultimo_prazo,
+      'ltimo prazo': row.ultimo_prazo,
       Status: row.status,
     })),
   )
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatrio')
   XLSX.writeFile(workbook, `${reportTitle.replace(/\s+/g, '_').toLowerCase()}.xlsx`)
 }
 
@@ -129,7 +129,7 @@ function normalizeImportedRows(rows: Array<Record<string, string>>, draft: Impor
   const sample = rows[0]
   const nomeKey = findColumn(sample, ['nome'])
   const faculdadeKey = findColumn(sample, ['faculdade'])
-  const diasKey = findColumn(sample, ['dias', 'estágio', 'estagio'])
+  const diasKey = findColumn(sample, ['dias', 'estgio', 'estagio'])
 
   return rows
     .map((row) => {
@@ -158,7 +158,7 @@ function normalizeImportedRows(rows: Array<Record<string, string>>, draft: Impor
 function ShareModal({ state, onClose }: { state: ShareModalState; onClose: () => void }) {
   if (!state.open) return null
 
-  const emailHref = `mailto:?subject=${encodeURIComponent(state.reportTitle)}&body=${encodeURIComponent(`Acesse o relatório online em: ${state.reportLink}`)}`
+  const emailHref = `mailto:?subject=${encodeURIComponent(state.reportTitle)}&body=${encodeURIComponent(`Acesse o relatrio online em: ${state.reportLink}`)}`
   const teamsHref = `https://teams.microsoft.com/share?href=${encodeURIComponent(state.reportLink)}&msgText=${encodeURIComponent(state.reportTitle)}`
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(`${state.reportTitle} - ${state.reportLink}`)}`
 
@@ -169,7 +169,7 @@ function ShareModal({ state, onClose }: { state: ShareModalState; onClose: () =>
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Compartilhar</p>
             <h3 className="mt-2 text-2xl font-semibold text-slate-900">{state.reportTitle}</h3>
-            <p className="mt-1 text-sm text-slate-600">Envie por e-mail, copie o link do relatório online ou compartilhe em ferramentas corporativas.</p>
+            <p className="mt-1 text-sm text-slate-600">Envie por e-mail, copie o link do relatrio online ou compartilhe em ferramentas corporativas.</p>
           </div>
           <button type="button" onClick={onClose} className="min-h-11 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
             Fechar
@@ -178,10 +178,10 @@ function ShareModal({ state, onClose }: { state: ShareModalState; onClose: () =>
 
         <div className="mt-5 grid gap-3">
           <a href={emailHref} className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-            Enviar por e-mail (link do relatório)
+            Enviar por e-mail (link do relatrio)
           </a>
           <button type="button" onClick={() => void navigator.clipboard.writeText(state.reportLink)} className="min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-            Copiar link de acesso ao relatório online
+            Copiar link de acesso ao relatrio online
           </button>
           <a href={teamsHref} target="_blank" rel="noreferrer" className="flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
             Compartilhar via Teams
@@ -231,11 +231,11 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
     <aside className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-6 lg:self-start">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Resumo</p>
       <h2 className="mt-2 text-2xl font-semibold text-slate-900">{getPeriodLabel(referenceDate, period)}</h2>
-      <p className="mt-1 text-sm text-slate-600">Estatísticas mensais e atalhos para exportação e compartilhamento.</p>
+      <p className="mt-1 text-sm text-slate-600">Estatsticas mensais e atalhos para exportao e compartilhamento.</p>
 
       <div className="mt-4 flex gap-2">
         <button type="button" onClick={() => onPeriodChange('mes')} className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-medium ${period === 'mes' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>
-          Mês
+          Ms
         </button>
         <button type="button" onClick={() => onPeriodChange('trimestre')} className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-medium ${period === 'trimestre' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>
           Trimestre
@@ -244,7 +244,7 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
         <div className="rounded-[24px] bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">Presenças</p>
+          <p className="text-sm text-slate-500">Presenas</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{totals.presencas}</p>
         </div>
         <div className="rounded-[24px] bg-slate-50 p-4">
@@ -261,7 +261,7 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold text-slate-900">Prazos de documentos</h3>
-            <p className="text-sm text-slate-500">Alertas próximos para acompanhamento.</p>
+            <p className="text-sm text-slate-500">Alertas prximos para acompanhamento.</p>
           </div>
           <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{prazos.length}</span>
         </div>
@@ -281,10 +281,10 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
 
       <div className="mt-5 space-y-3">
         <button type="button" onClick={() => onExport('complete')} className="min-h-12 w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-sm">
-          ?? Baixar Cópia Local (Excel)
+          ?? Baixar Cpia Local (Excel)
         </button>
         <Link to={`/relatorio?month=${referenceDate.getMonth() + 1}&year=${referenceDate.getFullYear()}&period=${period}`} className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-          Ver Relatório Mensal
+          Ver Relatrio Mensal
         </Link>
       </div>
 
@@ -293,15 +293,15 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
           Somente selecionadas
         </button>
         <button type="button" onClick={onShare} className="min-h-12 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm">
-          ?? Compartilhar relatório
+          ?? Compartilhar relatrio
         </button>
       </div>
 
       <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold text-slate-900">Relatórios salvos</h3>
-            <p className="text-sm text-slate-500">Histórico interno para consulta rápida.</p>
+            <h3 className="font-semibold text-slate-900">Relatrios salvos</h3>
+            <p className="text-sm text-slate-500">Histrico interno para consulta rpida.</p>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{savedReports.length}</span>
         </div>
@@ -311,11 +311,11 @@ function SummaryPanel({ items, selectedIds, referenceDate, period, savedReports,
               <div key={entry.id} className="rounded-2xl bg-white p-3 text-sm text-slate-700 shadow-sm">
                 <p className="font-semibold text-slate-900">{entry.reportTitle}</p>
                 <p>{new Date(entry.createdAt).toLocaleDateString('pt-BR')}</p>
-                <p className="text-xs text-slate-500">{entry.rowsCount} linha(s) • {entry.scope}</p>
+                <p className="text-xs text-slate-500">{entry.rowsCount} linha(s)  {entry.scope}</p>
               </div>
             ))
           ) : (
-            <p className="text-sm text-slate-500">Nenhum relatório salvo ainda.</p>
+            <p className="text-sm text-slate-500">Nenhum relatrio salvo ainda.</p>
           )}
         </div>
       </div>
@@ -345,7 +345,7 @@ export function DashboardPage() {
     setError('')
     const { data, error: dbError } = await supabase.from('estagiarias').select(selectFields).order('nome', { ascending: true })
     if (dbError) {
-      setError('Não foi possível carregar os dados.')
+      setError('No foi possvel carregar os dados.')
       setLoading(false)
       return
     }
@@ -387,7 +387,7 @@ export function DashboardPage() {
   async function createIntern(payload: { nome: string; faculdade: string; dias_estagio: string; observacoes: string }) {
     setError('')
     if (!session?.user.id) {
-      setError('Sessão inválida. Entre novamente para continuar.')
+      setError('Sesso invlida. Entre novamente para continuar.')
       return
     }
     const { error: insertError } = await supabase.from('estagiarias').insert({
@@ -398,10 +398,10 @@ export function DashboardPage() {
       formacoes: [],
     })
     if (insertError) {
-      setError('Não foi possível salvar.')
+      setError('No foi possvel salvar.')
       return
     }
-    setFeedback('Estagiária salva com sucesso.')
+    setFeedback('Estagiria salva com sucesso.')
     await fetchData()
   }
 
@@ -409,7 +409,7 @@ export function DashboardPage() {
     const file = event.target.files?.[0]
     if (!file) return
     if (!session?.user.id) {
-      setError('Sessão inválida. Entre novamente para continuar.')
+      setError('Sesso invlida. Entre novamente para continuar.')
       event.target.value = ''
       return
     }
@@ -419,16 +419,16 @@ export function DashboardPage() {
       const rows = await readSpreadsheet(file)
       const normalized = normalizeImportedRows(rows, importDraft)
       if (normalized.length === 0) {
-        setError('Nenhuma linha válida foi encontrada para importação.')
+        setError('Nenhuma linha vlida foi encontrada para importao.')
         return
       }
       const payload = normalized.map((row) => ({ user_id: session.user.id, nome: row.nome, faculdade: row.faculdade, dias_estagio: row.dias_estagio, observacoes: row.observacoes || null, registros: [], formacoes: row.formacoes }))
       const { error: insertError } = await supabase.from('estagiarias').insert(payload)
       if (insertError) {
-        setError('Não foi possível concluir a importação.')
+        setError('No foi possvel concluir a importao.')
         return
       }
-      setFeedback(`Sucesso! ${normalized.length} novas estagiárias foram cadastradas automaticamente.`)
+      setFeedback(`Sucesso! ${normalized.length} novas estagirias foram cadastradas automaticamente.`)
       await fetchData()
     } finally {
       setImporting(false)
@@ -447,12 +447,12 @@ export function DashboardPage() {
     downloadExcel(rows, reportTitle)
     await logExport('export_excel', scope, reportTitle, rows.length)
     loadSavedReports()
-    setFeedback('Relatório gerado com sucesso!')
+    setFeedback('Relatrio gerado com sucesso!')
   }
 
   async function handleShare() {
     const reportLink = buildReportLink(window.location.origin, selectedIds, referenceDate, period)
-    const reportTitle = `Relatório ${period === 'trimestre' ? 'trimestral' : 'mensal'} - ${getPeriodLabel(referenceDate, period)}`
+    const reportTitle = `Relatrio ${period === 'trimestre' ? 'trimestral' : 'mensal'} - ${getPeriodLabel(referenceDate, period)}`
     await logExport('share_report', selectedIds.length > 0 ? 'selected' : 'complete', reportTitle, selectedIds.length || items.length)
     loadSavedReports()
     setShareModal({ open: true, reportLink, reportTitle })
@@ -464,8 +464,8 @@ export function DashboardPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Painel geral</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Controle de Estagiárias</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Acompanhe assiduidade, prazos e documentos com uma visão rápida, humana e orientada para ação.</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Controle de Estagirias</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Acompanhe assiduidade, prazos e documentos com uma viso rpida, humana e orientada para ao.</p>
           </div>
           <button type="button" onClick={() => signOut()} className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
             Sair
@@ -473,7 +473,7 @@ export function DashboardPage() {
         </div>
         {proximoPrazo ? (
           <section className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-            <strong className="font-semibold">Prazo próximo:</strong> {proximoPrazo.nome} precisa devolver até {formatDate(proximoPrazo.data_limite)}.
+            <strong className="font-semibold">Prazo prximo:</strong> {proximoPrazo.nome} precisa devolver at {formatDate(proximoPrazo.data_limite)}.
           </section>
         ) : null}
       </header>
@@ -482,15 +482,11 @@ export function DashboardPage() {
         <button type="button" onClick={() => setActiveTab('monitoramento')} className={`min-h-12 rounded-2xl px-4 py-3 text-sm font-semibold ${activeTab === 'monitoramento' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
           Monitoramento
         </button>
-        <button type="button" onClick={() => setActiveTab('gestao')} className={`min-h-12 rounded-2xl px-4 py-3 text-sm font-semibold ${activeTab === 'gestao' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
-          Gestão (Cadastro)
-        </button>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="space-y-5">
-          {activeTab === 'monitoramento' ? (
-            <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -501,10 +497,10 @@ export function DashboardPage() {
                     <button key={option.key} type="button" onClick={() => setFiltro(option.key as FiltroStatus)} className={`min-h-11 rounded-2xl px-4 py-2 text-sm font-medium ${filtro === option.key ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>
                       {option.label}
                     </button>
-                  ))}
+                  )          )}
                 </div>
                 <button type="button" onClick={() => navigate(`/relatorio?month=${referenceDate.getMonth() + 1}&year=${referenceDate.getFullYear()}&period=${period}`)} className="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                  Ver Relatório Mensal
+                  Ver Relatrio Mensal
                 </button>
               </div>
 
@@ -524,7 +520,7 @@ export function DashboardPage() {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-4">
                           <button type="button" onClick={() => toggleSelected(item.id)} className={`flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient} text-2xl font-semibold text-white shadow-sm`}>
-                            {getInitialLetter(item.nome)}
+                            {getInitialLetter(item.nome          )}
                           </button>
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -532,7 +528,7 @@ export function DashboardPage() {
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusChip}`}>{statusLabel(status)}</span>
                             </div>
                             <p className="text-sm text-slate-600">{item.faculdade}</p>
-                            <p className="mt-1 text-sm text-slate-500">Dias de estágio: {item.dias_estagio}</p>
+                            <p className="mt-1 text-sm text-slate-500">Dias de estgio: {item.dias_estagio}</p>
                           </div>
                         </div>
 
@@ -550,7 +546,7 @@ export function DashboardPage() {
                     </article>
                   )
                 })}
-                {!loading && filtradas.length === 0 ? <p className="text-sm text-slate-600">Nenhuma estagiária neste filtro.</p> : null}
+                {!loading && filtradas.length === 0 ? <p className="text-sm text-slate-600">Nenhuma estagiria neste filtro.</p> : null}
               </div>
             </section>
           ) : (
@@ -558,10 +554,10 @@ export function DashboardPage() {
               <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Nova estagiária</h2>
-                    <p className="text-sm text-slate-500">Cadastro simples, rápido e preparado para uso no celular.</p>
+                    <h2 className="text-xl font-semibold text-slate-900">Nova estagiria</h2>
+                    <p className="text-sm text-slate-500">Cadastro simples, rpido e preparado para uso no celular.</p>
                   </div>
-                  <span className="hidden rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 sm:inline-flex">+ Adicionar estagiária</span>
+                  <span className="hidden rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 sm:inline-flex">+ Adicionar estagiria</span>
                 </div>
                 <div className="mt-4">
                   <InternForm onSave={createIntern} />
@@ -571,11 +567,11 @@ export function DashboardPage() {
               <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-900">Importar Estagiárias (Excel/CSV)</h2>
-                    <p className="text-sm text-slate-500">Aceita `.xlsx` e `.csv`, com mapeamento automático de Nome, Faculdade e Dias de Estágio.</p>
+                    <h2 className="text-xl font-semibold text-slate-900">Importar Estagirias (Excel/CSV)</h2>
+                    <p className="text-sm text-slate-500">Aceita `.xlsx` e `.csv`, com mapeamento automtico de Nome, Faculdade e Dias de Estgio.</p>
                   </div>
                   <label className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-sm">
-                    {importing ? 'Importando...' : 'Importar Estagiárias (Excel/CSV)'}
+                    {importing ? 'Importando...' : 'Importar Estagirias (Excel/CSV)'}
                     <input type="file" accept=".xlsx,.csv" className="hidden" onChange={handleImportFile} disabled={importing} />
                   </label>
                 </div>
@@ -584,16 +580,16 @@ export function DashboardPage() {
                   <label className="text-sm font-medium text-slate-700">Faculdade global
                     <input value={importDraft.faculdade_global} onChange={(event) => setImportDraft((current) => ({ ...current, faculdade_global: event.target.value }))} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" placeholder="Opcional para aplicar a todas" />
                   </label>
-                  <label className="text-sm font-medium text-slate-700">Dias de estágio global
+                  <label className="text-sm font-medium text-slate-700">Dias de estgio global
                     <input value={importDraft.dias_estagio_global} onChange={(event) => setImportDraft((current) => ({ ...current, dias_estagio_global: event.target.value }))} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" placeholder="Ex: seg, qua, sex" />
                   </label>
-                  <label className="text-sm font-medium text-slate-700">Formação global
-                    <input value={importDraft.formacao_nome} onChange={(event) => setImportDraft((current) => ({ ...current, formacao_nome: event.target.value }))} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" placeholder="Nome da formação para todas" />
+                  <label className="text-sm font-medium text-slate-700">Formao global
+                    <input value={importDraft.formacao_nome} onChange={(event) => setImportDraft((current) => ({ ...current, formacao_nome: event.target.value }))} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" placeholder="Nome da formao para todas" />
                   </label>
-                  <label className="text-sm font-medium text-slate-700">Data da formação global
+                  <label className="text-sm font-medium text-slate-700">Data da formao global
                     <input type="date" value={importDraft.formacao_data} onChange={(event) => setImportDraft((current) => ({ ...current, formacao_data: event.target.value }))} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
                   </label>
-                  <label className="text-sm font-medium text-slate-700 lg:col-span-2">Observações globais
+                  <label className="text-sm font-medium text-slate-700 lg:col-span-2">Observaes globais
                     <textarea value={importDraft.observacoes_globais} onChange={(event) => setImportDraft((current) => ({ ...current, observacoes_globais: event.target.value }))} className="mt-1 min-h-28 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" placeholder="Notas para aplicar a todas as importadas" />
                   </label>
                 </div>

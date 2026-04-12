@@ -8,10 +8,12 @@ import type { Estagiaria, Formacao, Registro } from '../types'
 import {
   capitalizeWords,
   formatDate,
+  formatMinutes,
   getEffectiveRegistros,
   getInitialLetter,
   getStatusPrazo,
   normalizeEstagiaria,
+  parseDurationToMinutes,
   statusLabel,
   validateDateFlow,
 } from '../utils'
@@ -113,6 +115,53 @@ function DiagnosticCard({ presencas, faltas }: { presencas: number; faltas: numb
         </div>
       </div>
     </section>
+  )
+}
+
+function HoursExtraCard({ registros }: { registros: Registro[] }) {
+  const monthlyData = useMemo(() => {
+    const currentYear = new Date().getFullYear()
+    const totals = Array.from({ length: 12 }, (_, index) => ({
+      label: new Date(currentYear, index, 1).toLocaleDateString('pt-BR', { month: 'short' }),
+      minutes: 0,
+    }))
+
+    registros.forEach((registro) => {
+      if (registro.tipo !== 'presenca') return
+      const monthIndex = new Date(`${registro.day}T00:00:00`).getMonth()
+      totals[monthIndex].minutes += parseDurationToMinutes(registro.hora_extra)
+    })
+
+    return totals
+  }, [registros])
+
+  const totalMinutes = monthlyData.reduce((sum, item) => sum + item.minutes, 0)
+  const maxMinutes = Math.max(...monthlyData.map((item) => item.minutes), 1)
+
+  return (
+    <aside className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Horas extras</p>
+          <h3 className="mt-2 text-2xl font-semibold text-slate-900">{formatMinutes(totalMinutes)}</h3>
+        </div>
+        <span className="rounded-full bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700">Acumulado</span>
+      </div>
+
+      <div className="mt-5 flex h-40 items-end gap-2">
+        {monthlyData.map((item) => (
+          <div key={item.label} className="flex flex-1 flex-col items-center gap-2">
+            <div className="flex h-28 w-full items-end rounded-full bg-slate-100 px-1 py-1">
+              <div
+                className="w-full rounded-full bg-sky-500 transition-all"
+                style={{ height: `${item.minutes === 0 ? 8 : Math.max((item.minutes / maxMinutes) * 100, 12)}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </aside>
   )
 }
 
@@ -253,6 +302,7 @@ export function InternDetailsPage() {
     })
 
     await patch({ registros: sortRegistros(Array.from(registrosMap.values())) })
+    setFeedback(`${days.length} dias atualizados com sucesso.`)
   }
 
   async function addFormacao(event: FormEvent<HTMLFormElement>) {
@@ -356,7 +406,10 @@ export function InternDetailsPage() {
 
       <AccordionSection title="Assiduidade" subtitle="Calendário visual, seleção múltipla, formações automáticas e anexo de atestado por dia." isOpen={openSections.assiduidade} onToggle={() => toggleSection('assiduidade')}>
         <div className="space-y-6">
-          <MonthlyCalendar registros={item.registros ?? []} formacaoDays={formacaoDays} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
+            <MonthlyCalendar registros={item.registros ?? []} formacaoDays={formacaoDays} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
+            <HoursExtraCard registros={item.registros ?? []} />
+          </div>
 
           <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

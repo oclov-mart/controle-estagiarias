@@ -1,4 +1,4 @@
-﻿export type RegistroTipo = 'presenca' | 'falta' | 'abono' | 'formacao'
+export type RegistroTipo = 'presenca' | 'falta' | 'formacao'
 
 export type RegistroAnexo = {
   file_name: string

@@ -37,7 +37,7 @@ export function normalizeRegistro(
 ): Registro {
   const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo
   const tipo: RegistroTipo =
-    legacyTipo === 'falta' || legacyTipo === 'abono' || legacyTipo === 'formacao' ? legacyTipo : 'presenca'
+    legacyTipo === 'falta' || legacyTipo === 'formacao' ? legacyTipo : 'presenca'
 
   return {
     ...createEmptyRegistro(raw.day ?? raw.data ?? '', tipo),
@@ -94,13 +94,13 @@ export function validateDateFlow(payload: {
 }): string | null {
   const { data_recebimento, data_limite, data_devolucao } = payload
   if (data_recebimento && data_limite && data_recebimento > data_limite) {
-    return 'Recebimento não pode ser depois da data limite.'
+    return 'Recebimento nÃ£o pode ser depois da data limite.'
   }
   if (data_limite && data_devolucao && data_devolucao < data_limite) {
-    return 'Devolução não pode ser antes da data limite.'
+    return 'DevoluÃ§Ã£o nÃ£o pode ser antes da data limite.'
   }
   if (data_recebimento && data_devolucao && data_devolucao < data_recebimento) {
-    return 'Devolução não pode ser antes do recebimento.'
+    return 'DevoluÃ§Ã£o nÃ£o pode ser antes do recebimento.'
   }
   return null
 }
@@ -181,7 +181,6 @@ export function getPeriodBounds(referenceDate: Date, period: ReportPeriod): { st
 export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date, period: ReportPeriod = 'mes'): {
   presencas: number
   faltas: number
-  abonos: number
   formacoes: number
   horasExtras: number
 } {
@@ -192,12 +191,11 @@ export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date, p
     (acc, registro) => {
       if (registro.tipo === 'presenca') acc.presencas += 1
       if (registro.tipo === 'falta') acc.faltas += 1
-      if (registro.tipo === 'abono') acc.abonos += 1
       if (registro.tipo === 'formacao') acc.formacoes += 1
       acc.horasExtras += parseDurationToMinutes(registro.hora_extra)
       return acc
     },
-    { presencas: 0, faltas: 0, abonos: 0, formacoes: 0, horasExtras: 0 },
+    { presencas: 0, faltas: 0, formacoes: 0, horasExtras: 0 },
   )
 }
 
@@ -225,7 +223,7 @@ export function getMonthRangeLabel(referenceDate: Date): string {
 export function getPeriodLabel(referenceDate: Date, period: ReportPeriod): string {
   if (period === 'trimestre') {
     const quarter = Math.floor(referenceDate.getMonth() / 3) + 1
-    return `${quarter}º trimestre de ${referenceDate.getFullYear()}`
+    return `${quarter}Âº trimestre de ${referenceDate.getFullYear()}`
   }
   return getMonthRangeLabel(referenceDate)
 }
