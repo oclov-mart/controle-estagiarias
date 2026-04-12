@@ -31,7 +31,9 @@ export function createEmptyRegistro(day: string, tipo: RegistroTipo = 'presenca'
   }
 }
 
-export function normalizeRegistro(raw: Partial<Registro> & { data?: string; tipo?: string }): Registro {
+export function normalizeRegistro(
+  raw: Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' },
+): Registro {
   const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo
   const tipo: RegistroTipo = legacyTipo === 'falta' ? 'falta' : 'presenca'
 
@@ -97,9 +99,10 @@ export function validateDateFlow(payload: {
 }
 
 export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
-  const registros = ((raw.registros as Array<Partial<Registro> & { data?: string; tipo?: string }>) ?? []).map(
-    normalizeRegistro,
-  )
+  const registros = (
+    (raw.registros as Array<Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' }>) ??
+    []
+  ).map(normalizeRegistro)
   const formacoes = (
     (raw.formacoes as Array<{ nome: string; data: string; presente?: boolean; presenca?: boolean }>) ?? []
   ).map(

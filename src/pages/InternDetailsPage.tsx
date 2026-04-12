@@ -17,6 +17,10 @@ import {
 const selectFields =
   'id, user_id, nome, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
 
+function sortRegistros(registros: Registro[]): Registro[] {
+  return [...registros].sort((a, b) => a.day.localeCompare(b.day))
+}
+
 export function InternDetailsPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -43,7 +47,7 @@ export function InternDetailsPage() {
       .single()
 
     if (dbError) {
-      setError('Não foi possível carregar os detalhes.')
+      setError('Nao foi possivel carregar os detalhes.')
       setLoading(false)
       return
     }
@@ -57,7 +61,6 @@ export function InternDetailsPage() {
 
   useEffect(() => {
     if (!session?.user.id || !id) return
-    // Realtime por registro para refletir alterações feitas em outros dispositivos.
     const channel = supabase
       .channel(`estagiaria-details-${id}`)
       .on(
@@ -84,6 +87,8 @@ export function InternDetailsPage() {
     if (!item) return
     setSaving(true)
     setError('')
+    setFeedback('')
+
     const nextDates = {
       data_recebimento: updates.data_recebimento ?? item.data_recebimento,
       data_limite: updates.data_limite ?? item.data_limite,
@@ -99,10 +104,10 @@ export function InternDetailsPage() {
     const { error: updateError } = await supabase.from('estagiarias').update(updates).eq('id', item.id)
     setSaving(false)
     if (updateError) {
-      setError('Falha ao salvar alteração.')
+      setError('Falha ao salvar alteracao.')
       return
     }
-    setFeedback('Alteração salva.')
+    setFeedback('Alteracao salva.')
     await fetchOne()
   }
 
@@ -112,7 +117,7 @@ export function InternDetailsPage() {
     if (!ok) return
     const { error: deleteError } = await supabase.from('estagiarias').delete().eq('id', item.id)
     if (deleteError) {
-      setError('Não foi possível excluir.')
+      setError('Nao foi possivel excluir.')
       return
     }
     navigate('/')
@@ -123,12 +128,27 @@ export function InternDetailsPage() {
     [item?.data_devolucao, item?.data_limite],
   )
 
-  async function setRegistro(day: string, tipo: Registro['tipo'] | null) {
+  async function saveRegistro(registro: Registro) {
     if (!item) return
-    // Apenas um registro por dia: substitui automaticamente.
-    const base = item.registros?.filter((registro) => registro.day !== day) ?? []
-    const next = tipo ? [...base, { day, tipo }] : base
-    await patch({ registros: next })
+    const base = item.registros?.filter((current) => current.day !== registro.day) ?? []
+    await patch({ registros: sortRegistros([...base, registro]) })
+  }
+
+  async function removeRegistro(day: string) {
+    if (!item) return
+    const next = (item.registros ?? []).filter((registro) => registro.day !== day)
+    await patch({ registros: sortRegistros(next) })
+  }
+
+  async function saveManyRegistros(days: string[], draft: Omit<Registro, 'day'>) {
+    if (!item || days.length === 0) return
+    const registrosMap = new Map((item.registros ?? []).map((registro) => [registro.day, registro]))
+
+    days.forEach((day) => {
+      registrosMap.set(day, { day, ...draft })
+    })
+
+    await patch({ registros: sortRegistros(Array.from(registrosMap.values())) })
   }
 
   async function addFormacao(event: FormEvent<HTMLFormElement>) {
@@ -156,7 +176,7 @@ export function InternDetailsPage() {
   if (!item) {
     return (
       <main className="mx-auto w-full max-w-5xl p-4">
-        <p className="text-red-600">{error || 'Registro não encontrado.'}</p>
+        <p className="text-red-600">{error || 'Registro nao encontrado.'}</p>
         <Link to="/" className="mt-2 inline-block text-sm underline">
           Voltar
         </Link>
@@ -214,7 +234,7 @@ export function InternDetailsPage() {
             />
           </label>
           <label className="text-sm">
-            Dias de estágio
+            Dias de estagio
             <input
               value={item.dias_estagio}
               onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))}
@@ -247,7 +267,7 @@ export function InternDetailsPage() {
             />
           </label>
           <label className="text-sm">
-            Devolução
+            Devolucao
             <input
               type="date"
               value={item.data_devolucao ?? ''}
@@ -257,21 +277,26 @@ export function InternDetailsPage() {
           </label>
         </div>
         <p className="mt-3 text-sm text-slate-600">
-          Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} |
-          Devolução: {formatDate(item.data_devolucao)}
+          Recebimento: {formatDate(item.data_recebimento)} | Limite: {formatDate(item.data_limite)} | Devolucao:{' '}
+          {formatDate(item.data_devolucao)}
         </p>
       </section>
 
-      <MonthlyCalendar registros={item.registros ?? []} onSetRegistro={setRegistro} />
+      <MonthlyCalendar
+        registros={item.registros ?? []}
+        onSaveRegistro={saveRegistro}
+        onRemoveRegistro={removeRegistro}
+        onSaveManyRegistros={saveManyRegistros}
+      />
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">Formações</h2>
+        <h2 className="mb-3 text-lg font-semibold">Formacoes</h2>
         <form onSubmit={addFormacao} className="grid gap-2 md:grid-cols-5">
           <input
             required
             value={newFormacao.nome}
             onChange={(event) => setNewFormacao((prev) => ({ ...prev, nome: event.target.value }))}
-            placeholder="Nome da formação"
+            placeholder="Nome da formacao"
             className="rounded-xl border border-slate-200 px-3 py-2 md:col-span-2"
           />
           <input
@@ -298,7 +323,7 @@ export function InternDetailsPage() {
             Ausente
           </label>
           <button className="rounded-xl bg-slate-900 px-4 py-2 font-medium text-white md:col-span-5" type="submit">
-            Adicionar formação
+            Adicionar formacao
           </button>
         </form>
 
@@ -331,7 +356,7 @@ export function InternDetailsPage() {
       </section>
 
       <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-lg font-semibold">Observações</h2>
+        <h2 className="mb-2 text-lg font-semibold">Observacoes</h2>
         <textarea
           value={item.observacoes ?? ''}
           onChange={(event) => setItem((prev) => (prev ? { ...prev, observacoes: event.target.value } : prev))}
