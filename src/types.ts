@@ -52,3 +52,5 @@ export type ReportRow = {
   ultimo_prazo: string
   status: string
 }
+
+export type ReportPeriod = 'mes' | 'trimestre'

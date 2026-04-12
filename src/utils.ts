@@ -1,4 +1,4 @@
-﻿import type { Estagiaria, Formacao, Registro, RegistroTipo, ReportRow, StatusPrazo } from './types'
+import type { Estagiaria, Formacao, Registro, RegistroTipo, ReportPeriod, ReportRow, StatusPrazo } from './types'
 
 export function capitalizeWords(value: string): string {
   return value
@@ -168,15 +168,25 @@ export function getEffectiveRegistros(estagiaria: Estagiaria): Registro[] {
   return Array.from(registrosMap.values()).sort((a, b) => a.day.localeCompare(b.day))
 }
 
-export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date): {
+export function getPeriodBounds(referenceDate: Date, period: ReportPeriod): { start: string; end: string } {
+  const startMonth = period === 'trimestre' ? Math.floor(referenceDate.getMonth() / 3) * 3 : referenceDate.getMonth()
+  const start = new Date(referenceDate.getFullYear(), startMonth, 1)
+  const end = period === 'trimestre' ? new Date(referenceDate.getFullYear(), startMonth + 3, 0) : new Date(referenceDate.getFullYear(), startMonth + 1, 0)
+  return {
+    start: toDateValue(start),
+    end: toDateValue(end),
+  }
+}
+
+export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date, period: ReportPeriod = 'mes'): {
   presencas: number
   faltas: number
   abonos: number
   formacoes: number
   horasExtras: number
 } {
-  const monthKey = toDateValue(new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1)).slice(0, 7)
-  const registros = getEffectiveRegistros(estagiaria).filter((registro) => registro.day.startsWith(monthKey))
+  const bounds = getPeriodBounds(referenceDate, period)
+  const registros = getEffectiveRegistros(estagiaria).filter((registro) => registro.day >= bounds.start && registro.day <= bounds.end)
 
   return registros.reduce(
     (acc, registro) => {
@@ -191,9 +201,9 @@ export function getMonthlyMetrics(estagiaria: Estagiaria, referenceDate: Date): 
   )
 }
 
-export function buildReportRows(items: Estagiaria[], referenceDate: Date): ReportRow[] {
+export function buildReportRows(items: Estagiaria[], referenceDate: Date, period: ReportPeriod = 'mes'): ReportRow[] {
   return items.map((item) => {
-    const metrics = getMonthlyMetrics(item, referenceDate)
+    const metrics = getMonthlyMetrics(item, referenceDate, period)
     return {
       id: item.id,
       nome: item.nome,
@@ -212,12 +222,22 @@ export function getMonthRangeLabel(referenceDate: Date): string {
   return referenceDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 }
 
-export function buildReportLink(origin: string, ids: string[], referenceDate: Date): string {
+export function getPeriodLabel(referenceDate: Date, period: ReportPeriod): string {
+  if (period === 'trimestre') {
+    const quarter = Math.floor(referenceDate.getMonth() / 3) + 1
+    return `${quarter}º trimestre de ${referenceDate.getFullYear()}`
+  }
+  return getMonthRangeLabel(referenceDate)
+}
+
+export function buildReportLink(origin: string, ids: string[], referenceDate: Date, period: ReportPeriod = 'mes'): string {
   const url = new URL('/relatorio', origin)
   url.searchParams.set('month', String(referenceDate.getMonth() + 1))
   url.searchParams.set('year', String(referenceDate.getFullYear()))
+  url.searchParams.set('period', period)
   if (ids.length > 0) {
     url.searchParams.set('ids', ids.join(','))
   }
   return url.toString()
 }
+

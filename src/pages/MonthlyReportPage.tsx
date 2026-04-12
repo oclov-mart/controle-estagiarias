@@ -2,8 +2,8 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import type { Estagiaria } from '../types'
-import { buildReportRows, formatMinutes, getMonthRangeLabel, getMonthlyMetrics, normalizeEstagiaria } from '../utils'
+import type { Estagiaria, ReportPeriod } from '../types'
+import { buildReportRows, formatMinutes, getMonthlyMetrics, getPeriodLabel, normalizeEstagiaria } from '../utils'
 
 const selectFields =
   'id, user_id, nome, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
@@ -17,6 +17,7 @@ export function MonthlyReportPage() {
 
   const month = Number(params.get('month') ?? new Date().getMonth() + 1)
   const year = Number(params.get('year') ?? new Date().getFullYear())
+  const period = (params.get('period') as ReportPeriod | null) ?? 'mes'
   const selectedIds = (params.get('ids') ?? '').split(',').filter(Boolean)
   const referenceDate = useMemo(() => new Date(year, month - 1, 1), [month, year])
 
@@ -43,8 +44,8 @@ export function MonthlyReportPage() {
     return items.filter((item) => selectedIds.includes(item.id))
   }, [items, selectedIds])
 
-  const rows = useMemo(() => buildReportRows(filteredItems, referenceDate), [filteredItems, referenceDate])
-  const totalHoras = useMemo(() => filteredItems.reduce((acc, item) => acc + getMonthlyMetrics(item, referenceDate).horasExtras, 0), [filteredItems, referenceDate])
+  const rows = useMemo(() => buildReportRows(filteredItems, referenceDate, period), [filteredItems, period, referenceDate])
+  const totalHoras = useMemo(() => filteredItems.reduce((acc, item) => acc + getMonthlyMetrics(item, referenceDate, period).horasExtras, 0), [filteredItems, period, referenceDate])
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-5 px-4 py-4 sm:px-5 sm:py-6 lg:px-6">
@@ -53,7 +54,7 @@ export function MonthlyReportPage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Relatório online</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">Relatório Mensal</h1>
-            <p className="mt-2 text-sm text-slate-600">{getMonthRangeLabel(referenceDate)} • {selectedIds.length > 0 ? 'Somente selecionadas' : 'Relatório completo'}</p>
+            <p className="mt-2 text-sm text-slate-600">{getPeriodLabel(referenceDate, period)} • {selectedIds.length > 0 ? 'Somente selecionadas' : 'Relatório completo'}</p>
           </div>
           <Link to="/" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
             Voltar ao painel

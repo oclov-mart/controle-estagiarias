@@ -131,7 +131,7 @@ function DayDetailModal({
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Detalhes do dia</p>
             <h4 className="text-2xl font-semibold text-slate-900">{new Date(`${day}T00:00:00`).toLocaleDateString('pt-BR')}</h4>
             <p className="mt-1 text-sm text-slate-600">
-              {locked ? 'Dia vinculado a formação. Consulta liberada, edição manual bloqueada.' : 'Edite horários, observações e anexo de atestado neste painel.'}
+              {locked ? 'Dia de formação. Os detalhes continuam visíveis neste painel.' : 'Edite horários, observações e anexo de atestado neste painel.'}
             </p>
           </div>
           <button type="button" onClick={onClose} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700">
@@ -274,7 +274,12 @@ export function MonthlyCalendar({ registros, formacaoDays, onSaveRegistro, onRem
   const now = new Date()
   const todayKey = toDateValue(now)
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const gesture = useRef<{ active: boolean; value: boolean }>({ active: false, value: true })
+  const gesture = useRef<{ active: boolean; value: boolean; sourceDay: string | null; pointerType: string | null }>({
+    active: false,
+    value: true,
+    sourceDay: null,
+    pointerType: null,
+  })
 
   const [referenceDate, setReferenceDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1))
   const [selectedDays, setSelectedDays] = useState<string[]>([])
@@ -344,28 +349,36 @@ export function MonthlyCalendar({ registros, formacaoDays, onSaveRegistro, onRem
     if (registro?.locked) return
     const nextValue = !selectedDays.includes(day)
 
+    gesture.current = { active: false, value: nextValue, sourceDay: day, pointerType: event.pointerType }
+
     if (event.pointerType === 'mouse') {
-      gesture.current = { active: true, value: nextValue }
-      toggleDaySelection(day, nextValue)
       return
     }
 
     holdTimer.current = setTimeout(() => {
-      gesture.current = { active: true, value: nextValue }
+      gesture.current = { active: true, value: nextValue, sourceDay: day, pointerType: event.pointerType }
       toggleDaySelection(day, nextValue)
     }, 320)
   }
 
-  function handlePointerEnter(day: string) {
+  function handlePointerEnter(event: ReactPointerEvent<HTMLButtonElement>, day: string) {
+    if (gesture.current.pointerType === 'mouse' && event.buttons === 1 && !gesture.current.active && gesture.current.sourceDay && gesture.current.sourceDay !== day) {
+      gesture.current.active = true
+      toggleDaySelection(gesture.current.sourceDay, gesture.current.value)
+    }
     if (!gesture.current.active) return
     toggleDaySelection(day, gesture.current.value)
   }
 
-  function resetPointerState() {
-    gesture.current = { active: false, value: true }
+  function resetPointerState(day?: string) {
+    const shouldOpen = Boolean(day && !gesture.current.active)
+    gesture.current = { active: false, value: true, sourceDay: null, pointerType: null }
     if (holdTimer.current) {
       clearTimeout(holdTimer.current)
       holdTimer.current = null
+    }
+    if (shouldOpen && day) {
+      openDayEditor(day)
     }
   }
 
@@ -467,10 +480,9 @@ export function MonthlyCalendar({ registros, formacaoDays, onSaveRegistro, onRem
               key={dateKey}
               type="button"
               onPointerDown={(event) => handlePointerDown(event, dateKey)}
-              onPointerEnter={() => handlePointerEnter(dateKey)}
-              onPointerUp={resetPointerState}
-              onPointerCancel={resetPointerState}
-              onClick={() => openDayEditor(dateKey)}
+              onPointerEnter={(event) => handlePointerEnter(event, dateKey)}
+              onPointerUp={() => resetPointerState(dateKey)}
+              onPointerCancel={() => resetPointerState()}
               className={`relative min-h-24 rounded-[24px] border p-2 text-left transition sm:min-h-28 ${
                 isToday ? 'border-sky-300 shadow-[0_0_0_2px_rgba(14,165,233,0.15)]' : 'border-slate-200'
               } ${registro?.tipo === 'formacao' ? 'bg-[repeating-linear-gradient(135deg,#f5f3ff,#f5f3ff_10px,#ede9fe_10px,#ede9fe_20px)]' : 'bg-white'} ${
@@ -488,12 +500,11 @@ export function MonthlyCalendar({ registros, formacaoDays, onSaveRegistro, onRem
                 </div>
               </div>
 
-              <div className="mt-3 flex min-h-8 items-end justify-between">
-                <div className="flex items-center gap-1">
+              <div className="mt-3 flex min-h-8 items-end justify-end">
+                <div className="flex items-center gap-1.5">
                   {registro?.tipo ? <span className={`h-2.5 w-2.5 rounded-full ${dotStyles[registro.tipo]}`} /> : <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />}
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{registro ? statusLabel(registro.tipo) : 'Livre'}</span>
+                  {registro?.tipo === 'formacao' ? <span className="text-[10px] text-slate-400">✦</span> : null}
                 </div>
-                {registro?.tipo === 'formacao' ? <span className="text-[10px] text-slate-400">✦</span> : null}
               </div>
             </button>
           )
