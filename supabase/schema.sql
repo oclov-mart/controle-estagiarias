@@ -4,6 +4,8 @@ create table if not exists public.estagiarias (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   nome text not null,
+  email text,
+  telefone text,
   faculdade text not null,
   dias_estagio text not null,
   observacoes text,

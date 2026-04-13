@@ -3,10 +3,16 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import type { Estagiaria, ReportPeriod } from '../types'
-import { buildReportRows, formatMinutes, getMonthlyMetrics, getPeriodLabel, normalizeEstagiaria } from '../utils'
-
-const selectFields =
-  'id, user_id, nome, email, telefone, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
+import {
+  ESTAGIARIA_SELECT_FIELDS,
+  ESTAGIARIA_SELECT_FIELDS_LEGACY,
+  buildReportRows,
+  formatMinutes,
+  getMonthlyMetrics,
+  getPeriodLabel,
+  hasMissingContactColumnsError,
+  normalizeEstagiaria,
+} from '../utils'
 
 export function MonthlyReportPage() {
   const { session } = useAuth()
@@ -26,7 +32,16 @@ export function MonthlyReportPage() {
       if (!session?.user.id) return
       setLoading(true)
       setError('')
-      const { data, error: dbError } = await supabase.from('estagiarias').select(selectFields).order('nome', { ascending: true })
+      const primary = await supabase.from('estagiarias').select(ESTAGIARIA_SELECT_FIELDS).order('nome', { ascending: true })
+      let data = primary.data as Estagiaria[] | null
+      let dbError = primary.error
+
+      if (dbError && hasMissingContactColumnsError(dbError)) {
+        const fallback = await supabase.from('estagiarias').select(ESTAGIARIA_SELECT_FIELDS_LEGACY).order('nome', { ascending: true })
+        data = fallback.data as Estagiaria[] | null
+        dbError = fallback.error
+      }
+
       if (dbError) {
         setError('Não foi possível carregar o relatório.')
         setLoading(false)

@@ -1,5 +1,11 @@
 import type { Estagiaria, Formacao, Registro, RegistroTipo, ReportPeriod, ReportRow, StatusPrazo } from './types'
 
+export const ESTAGIARIA_SELECT_FIELDS =
+  'id, user_id, nome, email, telefone, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
+
+export const ESTAGIARIA_SELECT_FIELDS_LEGACY =
+  'id, user_id, nome, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
+
 export function capitalizeWords(value: string): string {
   return value
     .trim()
@@ -93,15 +99,35 @@ export function validateDateFlow(payload: {
 }): string | null {
   const { data_recebimento, data_limite, data_devolucao } = payload
   if (data_recebimento && data_limite && data_recebimento > data_limite) {
-    return 'Recebimento nao pode ser depois da data limite.'
+    return 'Recebimento n\u00E3o pode ser depois da data limite.'
   }
   if (data_limite && data_devolucao && data_devolucao < data_limite) {
-    return 'Devolucao nao pode ser antes da data limite.'
+    return 'Devolu\u00E7\u00E3o n\u00E3o pode ser antes da data limite.'
   }
   if (data_recebimento && data_devolucao && data_devolucao < data_recebimento) {
-    return 'Devolucao nao pode ser antes do recebimento.'
+    return 'Devolu\u00E7\u00E3o n\u00E3o pode ser antes do recebimento.'
   }
   return null
+}
+
+export function hasMissingContactColumnsError(
+  error: {
+    code?: string | null
+    message?: string | null
+    details?: string | null
+    hint?: string | null
+  } | null | undefined,
+): boolean {
+  if (!error) return false
+  const stack = `${error.code ?? ''} ${error.message ?? ''} ${error.details ?? ''} ${error.hint ?? ''}`.toLowerCase()
+  const mentionsContact = stack.includes('email') || stack.includes('telefone')
+  const mentionsColumn = stack.includes('column') || stack.includes('schema cache') || stack.includes('does not exist') || stack.includes('pgrst')
+  return mentionsContact && mentionsColumn
+}
+
+export function stripContactFields<T extends Record<string, unknown>>(payload: T): Omit<T, 'email' | 'telefone'> {
+  const { email: _email, telefone: _telefone, ...rest } = payload as T & { email?: unknown; telefone?: unknown }
+  return rest as Omit<T, 'email' | 'telefone'>
 }
 
 export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
@@ -224,7 +250,7 @@ export function getMonthRangeLabel(referenceDate: Date): string {
 export function getPeriodLabel(referenceDate: Date, period: ReportPeriod): string {
   if (period === 'trimestre') {
     const quarter = Math.floor(referenceDate.getMonth() / 3) + 1
-    return `${quarter}o trimestre de ${referenceDate.getFullYear()}`
+    return `${quarter}\u00BA trimestre de ${referenceDate.getFullYear()}`
   }
   return getMonthRangeLabel(referenceDate)
 }

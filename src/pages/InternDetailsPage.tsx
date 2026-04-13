@@ -6,20 +6,21 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import type { Estagiaria, Formacao, Registro } from '../types'
 import {
+  ESTAGIARIA_SELECT_FIELDS,
+  ESTAGIARIA_SELECT_FIELDS_LEGACY,
   capitalizeWords,
   formatDate,
   formatMinutes,
   getEffectiveRegistros,
   getInitialLetter,
   getStatusPrazo,
+  hasMissingContactColumnsError,
   normalizeEstagiaria,
   parseDurationToMinutes,
   statusLabel,
+  stripContactFields,
   validateDateFlow,
 } from '../utils'
-
-const selectFields =
-  'id, user_id, nome, email, telefone, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
 
 type SectionKey = 'info' | 'assiduidade' | 'documentos'
 
@@ -189,7 +190,15 @@ export function InternDetailsPage() {
     if (!id) return
     setLoading(true)
     setError('')
-    const { data, error: dbError } = await supabase.from('estagiarias').select(selectFields).eq('id', id).single()
+    const primary = await supabase.from('estagiarias').select(ESTAGIARIA_SELECT_FIELDS).eq('id', id).single()
+    let data = primary.data as Estagiaria | null
+    let dbError = primary.error
+
+    if (dbError && hasMissingContactColumnsError(dbError)) {
+      const fallback = await supabase.from('estagiarias').select(ESTAGIARIA_SELECT_FIELDS_LEGACY).eq('id', id).single()
+      data = fallback.data as Estagiaria | null
+      dbError = fallback.error
+    }
 
     if (dbError) {
       setError('Não foi possível carregar os detalhes.')
@@ -241,13 +250,30 @@ export function InternDetailsPage() {
       return
     }
 
-    const { error: updateError } = await supabase.from('estagiarias').update(updates).eq('id', item.id)
+    let updateError = (await supabase.from('estagiarias').update(updates).eq('id', item.id)).error
+    let ignoredContactFields = false
+
+    if (updateError && hasMissingContactColumnsError(updateError)) {
+      const safeUpdates = stripContactFields(updates)
+      if (Object.keys(safeUpdates).length === 0) {
+        setSaving(false)
+        setError('E-mail e telefone dependem da atualização do banco.')
+        return
+      }
+      ignoredContactFields = 'email' in updates || 'telefone' in updates
+      updateError = (await supabase.from('estagiarias').update(safeUpdates).eq('id', item.id)).error
+    }
+
     setSaving(false)
     if (updateError) {
       setError('Falha ao salvar alteração.')
       return
     }
-    setFeedback('Alteração salva.')
+    setFeedback(
+      ignoredContactFields
+        ? 'Alteração salva. E-mail e telefone ficam disponíveis assim que o banco for atualizado.'
+        : 'Alteração salva.',
+    )
     await fetchOne()
   }
 
