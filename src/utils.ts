@@ -93,13 +93,13 @@ export function validateDateFlow(payload: {
 }): string | null {
   const { data_recebimento, data_limite, data_devolucao } = payload
   if (data_recebimento && data_limite && data_recebimento > data_limite) {
-    return 'Recebimento não pode ser depois da data limite.'
+    return 'Recebimento nao pode ser depois da data limite.'
   }
   if (data_limite && data_devolucao && data_devolucao < data_limite) {
-    return 'Devolução não pode ser antes da data limite.'
+    return 'Devolucao nao pode ser antes da data limite.'
   }
   if (data_recebimento && data_devolucao && data_devolucao < data_recebimento) {
-    return 'Devolução não pode ser antes do recebimento.'
+    return 'Devolucao nao pode ser antes do recebimento.'
   }
   return null
 }
@@ -224,7 +224,7 @@ export function getMonthRangeLabel(referenceDate: Date): string {
 export function getPeriodLabel(referenceDate: Date, period: ReportPeriod): string {
   if (period === 'trimestre') {
     const quarter = Math.floor(referenceDate.getMonth() / 3) + 1
-    return `${quarter}º trimestre de ${referenceDate.getFullYear()}`
+    return `${quarter}o trimestre de ${referenceDate.getFullYear()}`
   }
   return getMonthRangeLabel(referenceDate)
 }
