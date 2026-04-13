@@ -6,7 +6,7 @@ import type { Estagiaria, ReportPeriod } from '../types'
 import { buildReportRows, formatMinutes, getMonthlyMetrics, getPeriodLabel, normalizeEstagiaria } from '../utils'
 
 const selectFields =
-  'id, user_id, nome, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
+  'id, user_id, nome, email, telefone, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
 
 export function MonthlyReportPage() {
   const { session } = useAuth()

@@ -12,7 +12,7 @@ create table if not exists public.estagiarias (
   data_devolucao date,
   -- Exemplo de registros: [{"day":"2026-04-07","tipo":"falta"}]
   registros jsonb not null default '[]'::jsonb,
-  -- Exemplo de formações: [{"nome":"Oficina X","data":"2026-04-10","presente":true}]
+  -- Exemplo de formaÃ§Ãµes: [{"nome":"Oficina X","data":"2026-04-10","presente":true}]
   formacoes jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

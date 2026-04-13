@@ -27,6 +27,8 @@ export type Estagiaria = {
   id: string
   user_id: string
   nome: string
+  email: string | null
+  telefone: string | null
   faculdade: string
   dias_estagio: string
   observacoes: string | null

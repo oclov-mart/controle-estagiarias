@@ -33,11 +33,10 @@ export function createEmptyRegistro(day: string, tipo: RegistroTipo = 'presenca'
 }
 
 export function normalizeRegistro(
-  raw: Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' },
+  raw: Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' | 'abono' },
 ): Registro {
-  const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo
-  const tipo: RegistroTipo =
-    legacyTipo === 'falta' || legacyTipo === 'formacao' ? legacyTipo : 'presenca'
+  const legacyTipo = raw.tipo === 'extra' ? 'presenca' : raw.tipo === 'abono' ? 'falta' : raw.tipo
+  const tipo: RegistroTipo = legacyTipo === 'falta' || legacyTipo === 'formacao' ? legacyTipo : 'presenca'
 
   return {
     ...createEmptyRegistro(raw.day ?? raw.data ?? '', tipo),
@@ -45,7 +44,7 @@ export function normalizeRegistro(
     atestado_medico: raw.atestado_medico ?? false,
     hora_entrada: raw.hora_entrada ?? null,
     hora_saida: raw.hora_saida ?? null,
-    hora_extra: raw.hora_extra ?? (raw.tipo === 'extra' ? 'Sim' : null),
+    hora_extra: raw.hora_extra ?? null,
     anexo_atestado: raw.anexo_atestado ?? null,
   }
 }
@@ -94,20 +93,20 @@ export function validateDateFlow(payload: {
 }): string | null {
   const { data_recebimento, data_limite, data_devolucao } = payload
   if (data_recebimento && data_limite && data_recebimento > data_limite) {
-    return 'Recebimento nÃ£o pode ser depois da data limite.'
+    return 'Recebimento n�o pode ser depois da data limite.'
   }
   if (data_limite && data_devolucao && data_devolucao < data_limite) {
-    return 'DevoluÃ§Ã£o nÃ£o pode ser antes da data limite.'
+    return 'Devolu��o n�o pode ser antes da data limite.'
   }
   if (data_recebimento && data_devolucao && data_devolucao < data_recebimento) {
-    return 'DevoluÃ§Ã£o nÃ£o pode ser antes do recebimento.'
+    return 'Devolu��o n�o pode ser antes do recebimento.'
   }
   return null
 }
 
 export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
   const registros = (
-    (raw.registros as Array<Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' }>) ??
+    (raw.registros as Array<Omit<Partial<Registro>, 'tipo'> & { data?: string; tipo?: Registro['tipo'] | 'extra' | 'abono' }>) ??
     []
   ).map(normalizeRegistro)
   const formacoes = (
@@ -123,6 +122,8 @@ export function normalizeEstagiaria(raw: Partial<Estagiaria>): Estagiaria {
     id: raw.id ?? '',
     user_id: raw.user_id ?? '',
     nome: raw.nome ?? '',
+    email: raw.email ?? null,
+    telefone: raw.telefone ?? null,
     faculdade: raw.faculdade ?? '',
     dias_estagio: raw.dias_estagio ?? '',
     observacoes: raw.observacoes ?? null,
@@ -223,7 +224,7 @@ export function getMonthRangeLabel(referenceDate: Date): string {
 export function getPeriodLabel(referenceDate: Date, period: ReportPeriod): string {
   if (period === 'trimestre') {
     const quarter = Math.floor(referenceDate.getMonth() / 3) + 1
-    return `${quarter}Âº trimestre de ${referenceDate.getFullYear()}`
+    return `${quarter}� trimestre de ${referenceDate.getFullYear()}`
   }
   return getMonthRangeLabel(referenceDate)
 }
@@ -238,4 +239,3 @@ export function buildReportLink(origin: string, ids: string[], referenceDate: Da
   }
   return url.toString()
 }
-

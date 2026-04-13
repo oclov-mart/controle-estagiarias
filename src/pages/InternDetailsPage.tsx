@@ -19,7 +19,7 @@ import {
 } from '../utils'
 
 const selectFields =
-  'id, user_id, nome, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
+  'id, user_id, nome, email, telefone, faculdade, dias_estagio, observacoes, data_recebimento, data_limite, data_devolucao, registros, formacoes, created_at, updated_at'
 
 type SectionKey = 'info' | 'assiduidade' | 'documentos'
 
@@ -291,7 +291,7 @@ export function InternDetailsPage() {
     await patch({ registros: sortRegistros(next) })
   }
 
-  async function saveManyRegistros(days: string[], draft: Partial<Registro>) {
+  async function saveManyRegistros(days: string[], draft: Omit<Registro, 'day'>) {
     if (!item || days.length === 0) return
     const registrosMap = new Map((item.registros ?? []).map((registro) => [registro.day, registro]))
 
@@ -375,7 +375,7 @@ export function InternDetailsPage() {
         </div>
       </section>
 
-      <AccordionSection title="Informações da Estagiária" subtitle="Dados principais com foco em leitura rápida no mobile." isOpen={openSections.info} onToggle={() => toggleSection('info')}>
+      <AccordionSection title="Informações da Estagiária" subtitle="Dados principais." isOpen={openSections.info} onToggle={() => toggleSection('info')}>
         <div className="space-y-5">
           <div className="flex items-center gap-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-xl font-semibold text-white">{avatarLetter}</div>
@@ -386,15 +386,21 @@ export function InternDetailsPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-2">
             <label className="text-sm font-medium text-slate-700">Nome
               <input value={item.nome} onChange={(event) => setItem((prev) => (prev ? { ...prev, nome: event.target.value } : prev))} onBlur={() => patch({ nome: capitalizeWords(item.nome) })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+            </label>
+            <label className="text-sm font-medium text-slate-700">E-mail
+              <input value={item.email ?? ''} onChange={(event) => setItem((prev) => (prev ? { ...prev, email: event.target.value } : prev))} onBlur={(event) => patch({ email: event.target.value || null })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+            </label>
+            <label className="text-sm font-medium text-slate-700">Telefone
+              <input value={item.telefone ?? ''} onChange={(event) => setItem((prev) => (prev ? { ...prev, telefone: event.target.value } : prev))} onBlur={(event) => patch({ telefone: event.target.value || null })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
             <label className="text-sm font-medium text-slate-700">Faculdade
               <input value={item.faculdade} onChange={(event) => setItem((prev) => (prev ? { ...prev, faculdade: event.target.value } : prev))} onBlur={() => patch({ faculdade: capitalizeWords(item.faculdade) })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
             </label>
             <label className="text-sm font-medium text-slate-700">Dias de estágio
-              <input value={item.dias_estagio} onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))} onBlur={() => patch({ dias_estagio: item.dias_estagio })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+              <input value={item.dias_estagio} onChange={(event) => setItem((prev) => (prev ? { ...prev, dias_estagio: event.target.value } : prev))} onBlur={() => patch({ dias_estagio: item.dias_estagio })} className="mt-1 min-h-12 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base lg:col-span-2" />
             </label>
           </div>
 
@@ -404,10 +410,10 @@ export function InternDetailsPage() {
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Assiduidade" subtitle="Calendário visual, seleção múltipla, formações automáticas e anexo de atestado por dia." isOpen={openSections.assiduidade} onToggle={() => toggleSection('assiduidade')}>
+      <AccordionSection title="Assiduidade" subtitle="Controle mensal." isOpen={openSections.assiduidade} onToggle={() => toggleSection('assiduidade')}>
         <div className="space-y-6">
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-            <MonthlyCalendar month={new Date()} registros={Object.fromEntries((item.registros ?? []).map(r => [r.day, r]))} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
+            <MonthlyCalendar registros={item.registros ?? []} formacaoDays={formacaoDays} onSaveRegistro={saveRegistro} onRemoveRegistro={removeRegistro} onSaveManyRegistros={saveManyRegistros} />
             <HoursExtraCard registros={item.registros ?? []} />
           </div>
 
@@ -456,7 +462,7 @@ export function InternDetailsPage() {
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Documentos" subtitle="Datas principais com resumo visual para leitura rápida." isOpen={openSections.documentos} onToggle={() => toggleSection('documentos')}>
+      <AccordionSection title="Documentos" subtitle="Datas principais." isOpen={openSections.documentos} onToggle={() => toggleSection('documentos')}>
         <div className="space-y-5">
           <div className="grid gap-4 lg:grid-cols-3">
             <label className="text-sm font-medium text-slate-700">Recebimento
