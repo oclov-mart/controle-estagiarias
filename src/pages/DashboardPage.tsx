@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as XLSX from 'xlsx'
-import { InternForm } from '../components/InternEntryForm'
+import { InternEntryForm } from '../components/InternEntryForm'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import type { Estagiaria, ReportRow } from '../types'
@@ -31,7 +31,7 @@ function getPhotoGradient(name: string): string {
 
 function getMonthlyTitle(referenceDate: Date) {
   const label = referenceDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-  return `Relatório mensal - ${label.charAt(0).toUpperCase()}${label.slice(1)}`
+  return `Relatorio mensal - ${label.charAt(0).toUpperCase()}${label.slice(1)}`
 }
 
 function readSavedReports(): SavedReportEntry[] {
@@ -55,16 +55,16 @@ function downloadExcel(rows: ReportRow[], reportTitle: string) {
     rows.map((row) => ({
       Nome: row.nome,
       Faculdade: row.faculdade,
-      'Dias de estágio': row.dias_estagio,
-      Presenças: row.presencas,
+      'Dias de estagio': row.dias_estagio,
+      Presencas: row.presencas,
       Faltas: row.faltas,
       'Horas extras': row.horas_extras,
-      'Último prazo': row.ultimo_prazo,
+      'Ultimo prazo': row.ultimo_prazo,
       Status: row.status,
     })),
   )
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatorio')
   XLSX.writeFile(workbook, `${reportTitle.replace(/\s+/g, '_').toLowerCase()}.xlsx`)
 }
 
@@ -98,11 +98,11 @@ function SummaryPanel({ items, referenceDate, savedReports, onSaveLocal }: {
   return (
     <aside className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-6 lg:self-start">
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Resumo</p>
-      <h2 className="mt-2 text-2xl font-semibold text-slate-900">{getMonthlyTitle(referenceDate).replace('Relatório mensal - ', '')}</h2>
+      <h2 className="mt-2 text-2xl font-semibold text-slate-900">{getMonthlyTitle(referenceDate).replace('Relatorio mensal - ', '')}</h2>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
         <div className="rounded-[24px] bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">Presenças</p>
+          <p className="text-sm text-slate-500">Presencas</p>
           <p className="mt-2 text-3xl font-semibold text-slate-900">{totals.presencas}</p>
         </div>
         <div className="rounded-[24px] bg-slate-50 p-4">
@@ -119,7 +119,7 @@ function SummaryPanel({ items, referenceDate, savedReports, onSaveLocal }: {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="font-semibold text-slate-900">Prazos de documentos</h3>
-            <p className="text-sm text-slate-500">Acompanhamento rápido.</p>
+            <p className="text-sm text-slate-500">Acompanhamento rapido.</p>
           </div>
           <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{prazos.length}</span>
         </div>
@@ -139,18 +139,18 @@ function SummaryPanel({ items, referenceDate, savedReports, onSaveLocal }: {
 
       <div className="mt-5 space-y-3">
         <button type="button" onClick={onSaveLocal} className="min-h-12 w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-sm">
-          Salvar cópia local
+          Salvar copia local
         </button>
         <Link to={`/relatorio?month=${referenceDate.getMonth() + 1}&year=${referenceDate.getFullYear()}&period=mes`} className="flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">
-          Ver Relatório Mensal
+          Ver Relatorio Mensal
         </Link>
       </div>
 
       <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold text-slate-900">Histórico mensal</h3>
-            <p className="text-sm text-slate-500">Um relatório salvo por mês.</p>
+            <h3 className="font-semibold text-slate-900">Historico mensal</h3>
+            <p className="text-sm text-slate-500">Um relat??rio salvo por mes.</p>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">{savedReports.length}</span>
         </div>
@@ -163,7 +163,7 @@ function SummaryPanel({ items, referenceDate, savedReports, onSaveLocal }: {
               </div>
             ))
           ) : (
-            <p className="text-sm text-slate-500">Nenhum relatório salvo ainda.</p>
+            <p className="text-sm text-slate-500">Nenhum relat??rio salvo ainda.</p>
           )}
         </div>
       </div>
@@ -186,7 +186,7 @@ export function DashboardPage() {
     setError('')
     const { data, error: dbError } = await supabase.from('estagiarias').select(selectFields).order('nome', { ascending: true })
     if (dbError) {
-      setError('Não foi possível carregar os dados.')
+      setError('N??o foi poss??vel carregar os dados.')
       setLoading(false)
       return
     }
@@ -223,7 +223,7 @@ export function DashboardPage() {
   async function createIntern(payload: { nome: string; email: string; telefone: string; faculdade: string; dias_estagio: string; observacoes: string }) {
     setError('')
     if (!session?.user.id) {
-      setError('Sessão inválida. Entre novamente para continuar.')
+      setError('Sess??o inv??lida. Entre novamente para continuar.')
       return
     }
 
@@ -240,11 +240,11 @@ export function DashboardPage() {
     })
 
     if (insertError) {
-      setError('Não foi possível salvar.')
+      setError('N??o foi poss??vel salvar.')
       return
     }
 
-    setFeedback('Estagiária salva com sucesso.')
+    setFeedback('Estagi??ria salva com sucesso.')
     await fetchData()
   }
 
@@ -253,7 +253,7 @@ export function DashboardPage() {
     const reportTitle = getMonthlyTitle(referenceDate)
     downloadExcel(rows, reportTitle)
     setSavedReports(persistSavedReport(referenceDate))
-    setFeedback('Relatório salvo com sucesso.')
+    setFeedback('Relatorio salvo com sucesso.')
   }
 
   return (
@@ -262,8 +262,8 @@ export function DashboardPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Painel geral</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Controle de Estagiárias</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Acompanhe assiduidade, prazos e documentos com leitura rápida e ação direta.</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Controle de Estagi??rias</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Acompanhe assiduidade, prazos e documentos com leitura r??pida e a????o direta.</p>
           </div>
           <button type="button" onClick={() => signOut()} className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
             Sair
@@ -271,7 +271,7 @@ export function DashboardPage() {
         </div>
         {proximoPrazo ? (
           <section className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-            <strong className="font-semibold">Prazo próximo:</strong> {proximoPrazo.nome} precisa devolver até {formatDate(proximoPrazo.data_limite)}.
+            <strong className="font-semibold">Prazo pr??ximo:</strong> {proximoPrazo.nome} precisa devolver at?? {formatDate(proximoPrazo.data_limite)}.
           </section>
         ) : null}
       </header>
@@ -314,7 +314,7 @@ export function DashboardPage() {
                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusChip}`}>{statusLabel(status)}</span>
                           </div>
                           <p className="text-sm text-slate-600">{item.faculdade}</p>
-                          <p className="mt-1 text-sm text-slate-500">Dias de estágio: {item.dias_estagio}</p>
+                          <p className="mt-1 text-sm text-slate-500">Dias de estagio: {item.dias_estagio}</p>
                         </div>
                       </div>
 
@@ -328,20 +328,20 @@ export function DashboardPage() {
                   </article>
                 )
               })}
-              {!loading && filtradas.length === 0 ? <p className="text-sm text-slate-600">Nenhuma estagiária neste filtro.</p> : null}
+              {!loading && filtradas.length === 0 ? <p className="text-sm text-slate-600">Nenhuma estagi??ria neste filtro.</p> : null}
             </div>
           </section>
 
           <section className="rounded-[32px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Nova estagiária</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Nova estagi??ria</h2>
                 <p className="text-sm text-slate-500">Cadastro individual com dados principais.</p>
               </div>
-              <span className="hidden rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 sm:inline-flex">+ Adicionar estagiária</span>
+              <span className="hidden rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 sm:inline-flex">+ Adicionar estagi??ria</span>
             </div>
             <div className="mt-4">
-              <InternForm onSave={createIntern} />
+              <InternEntryForm onSave={createIntern} />
             </div>
           </section>
         </div>

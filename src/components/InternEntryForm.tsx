@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { capitalizeWords } from '../utils'
 
-type InternFormProps = {
+type InternEntryFormProps = {
   onSave: (payload: {
     nome: string
     email: string
@@ -13,7 +13,7 @@ type InternFormProps = {
   }) => Promise<void>
 }
 
-export function InternForm({ onSave }: InternFormProps) {
+export function InternEntryForm({ onSave }: InternEntryFormProps) {
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
@@ -48,13 +48,13 @@ export function InternForm({ onSave }: InternFormProps) {
   return (
     <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
       <input required placeholder="Nome" value={nome} onChange={(event) => setNome(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
-      <input type="email" placeholder="E-mail" value={email} onChange={(event) => setEmail(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
+      <input type="email" placeholder="Email" value={email} onChange={(event) => setEmail(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
       <input placeholder="Telefone" value={telefone} onChange={(event) => setTelefone(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
       <input required placeholder="Faculdade" value={faculdade} onChange={(event) => setFaculdade(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base" />
-      <input required placeholder="Dias de estágio (ex: seg, qua, sex)" value={diasEstagio} onChange={(event) => setDiasEstagio(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
-      <textarea placeholder="Observações (opcional)" value={observacoes} onChange={(event) => setObservacoes(event.target.value)} className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
+      <input required placeholder="Dias de estagio (ex: seg, qua, sex)" value={diasEstagio} onChange={(event) => setDiasEstagio(event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
+      <textarea placeholder="Observacoes (opcional)" value={observacoes} onChange={(event) => setObservacoes(event.target.value)} className="min-h-24 rounded-2xl border border-slate-200 px-4 py-3 text-base md:col-span-2" />
       <button type="submit" disabled={loading} className="min-h-12 rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white shadow-sm disabled:opacity-60 md:col-span-2">
-        {loading ? 'Salvando...' : '+ Adicionar estagiária'}
+        {loading ? 'Salvando...' : '+ Adicionar estagiaria'}
       </button>
     </form>
   )
