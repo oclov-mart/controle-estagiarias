@@ -1,4 +1,15 @@
-# Controle de Estagiárias 📋
+controle-estagiarias 📋
+Sistema para gerenciamento de estagiárias com foco em UX e produtividade.
+
+📸 Interface do Sistema
+<div align="center">
+<img src="./Pagina de Login.png" width="400px" alt="Login" />
+<img src="./Interface Principal.png" width="400px" alt="Dashboard" />
+</div>
+
+<p align="center">
+<a href="./showcase.html"><strong>Ver Apresentação Detalhada</strong></a>
+</p>
 
 Este projeto nasceu de uma necessidade real: tirar o controle de prazos e faltas do papel (ou de planilhas confusas) e colocar em um sistema que realmente ajude na supervisão. É uma ferramenta pensada para professores que precisam gerenciar múltiplas estagiárias sem perder o fio da meada.
 
