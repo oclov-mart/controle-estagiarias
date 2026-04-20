@@ -1,13 +1,101 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>estagiarias</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação - Sistema de Estagiários</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            text-align: center;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+        h1 { color: #004a99; margin: 0; text-transform: uppercase; }
+        .subtitle { color: #666; font-style: italic; }
+        
+        /* Estilo das Imagens */
+        .section-title { font-size: 1.2rem; color: #004a99; margin: 20px 0 10px; border-left: 4px solid #007bff; padding-left: 10px; }
+        .img-container { width: 100%; margin-bottom: 30px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        img { width: 100%; display: block; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .features { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; background: #f8f9fa; padding: 30px; border-radius: 12px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        
+        footer { text-align: center; margin-top: 50px; font-size: 0.9rem; color: #999; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Sistema de Controle de Estagiários</h1>
+        <p class="subtitle">Aplicação web para acompanhamento de presença, prazos e relatórios.</p>
+    </header>
+
+    <div class="section-title">Acesso ao Sistema</div>
+    <div class="img-container">
+        <img src="Pagina de Login.png" alt="Página de Login">
+    </div>
+
+    <div class="section-title">Dashboard Principal</div>
+    <div class="img-container">
+        <img src="Interface Principal.png" alt="Painel Geral">
+    </div>
+
+    <div class="grid">
+        <div>
+            <div class="section-title">Controle de Assiduidade</div>
+            <div class="img-container">
+                <img src="Calendario de Assiduidade.png" alt="Calendário">
+            </div>
+        </div>
+        <div>
+            <div class="section-title">Gestão de Documentos</div>
+            <div class="img-container">
+                <img src="Prazos de Documentos.png" alt="Prazos">
+            </div>
+        </div>
+    </div>
+
+    <div class="features">
+        <div>
+            <strong>Principais Recursos</strong>
+            <ul>
+                <li>Organização centralizada de estagiários.</li>
+                <li>Controle de prazos e atividades.</li>
+                <li>Histórico mensal de presenças.</li>
+            </ul>
+        </div>
+        <div>
+            <strong>Diferenciais</strong>
+            <ul>
+                <li>Interface limpa e intuitiva.</li>
+                <li>Foco em Experiência do Usuário (UX).</li>
+                <li>Leitura automática de assiduidade.</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        Projeto pessoal desenvolvido para fins de aprendizado e prática em desenvolvimento web.
+    </footer>
+</div>
+
+</body>
 </html>
